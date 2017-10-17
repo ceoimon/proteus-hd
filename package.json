@@ -12,7 +12,7 @@
     "jsdoc": "3.5.5",
     "mocha": "2.5.3",
     "tsd-jsdoc": "dcodeio/tsd-jsdoc#fe76c4dc071b00bb549d3af7a3bad8c555999e81",
-    "webpack": "3.7.1"
+    "webpack": "3.8.1"
   },
   "homepage": "https://github.com/wireapp/proteus.js",
   "license": "GPL-3.0",
