@@ -103,9 +103,8 @@ export module derived {
        /**
         * @param {!number} idx
         * @returns {Uint8Array}
-        * @private
         */
-       private static index_as_nonce(idx: number): Uint8Array;
+       static index_as_nonce(idx: number): Uint8Array;
 
        /**
         * @param {!ArrayBuffer} header - The serialized header to encrypt
@@ -115,11 +114,11 @@ export module derived {
        encrypt(header: ArrayBuffer, nonce: Uint8Array): Uint8Array;
 
        /**
-        * @param {!Uint8Array} ciphertext
+        * @param {!Uint8Array} encrypted_header
         * @param {!Uint8Array} nonce
         * @returns {Uint8Array}
         */
-       decrypt(ciphertext: Uint8Array, nonce: Uint8Array): Uint8Array;
+       decrypt(encrypted_header: Uint8Array, nonce: Uint8Array): Uint8Array;
 
        /**
         * @param {!CBOR.Encoder} e
@@ -961,11 +960,11 @@ export module message {
        constructor();
 
        /**
-        * @param {!Uint8Array} header - encrypted header
+        * @param {!Uint8Array} encrypted_header - encrypted header
         * @param {!Uint8Array} cipher_text
         * @returns {HeaderMessage} - `this`
         */
-       static new(header: Uint8Array, cipher_text: Uint8Array): HeaderMessage;
+       static new(encrypted_header: Uint8Array, cipher_text: Uint8Array): HeaderMessage;
 
        /**
         * @param {!CBOR.Encoder} e
@@ -1274,15 +1273,11 @@ export module session {
    /**
     * @class SendChain
     * @throws {DontCallConstructor}
-    *
-    * extends `SendChain` for `SessionState`'s encode/decode compatibility
     */
    class SendChain {
        /**
         * @class SendChain
         * @throws {DontCallConstructor}
-        *
-        * extends `SendChain` for `SessionState`'s encode/decode compatibility
         */
        constructor();
 

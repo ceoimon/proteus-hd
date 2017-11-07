@@ -40,17 +40,17 @@ class HeaderMessage extends Message {
   }
 
   /**
-   * @param {!Uint8Array} header - encrypted header
+   * @param {!Uint8Array} encrypted_header - encrypted header
    * @param {!Uint8Array} cipher_text
    * @returns {HeaderMessage} - `this`
    */
-  static new(header, cipher_text) {
-    TypeUtil.assert_is_instance(Uint8Array, header);
+  static new(encrypted_header, cipher_text) {
+    TypeUtil.assert_is_instance(Uint8Array, encrypted_header);
     TypeUtil.assert_is_instance(Uint8Array, cipher_text);
 
     const hm = ClassUtil.new_instance(HeaderMessage);
 
-    hm.header = header;
+    hm.header = encrypted_header;
     hm.cipher_text = cipher_text;
 
     Object.freeze(hm);

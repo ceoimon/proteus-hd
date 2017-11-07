@@ -53,7 +53,6 @@ class HeadKey {
   /**
    * @param {!number} idx
    * @returns {Uint8Array}
-   * @private
    */
   static index_as_nonce(idx) {
     const nonce = new ArrayBuffer(8);
@@ -73,12 +72,12 @@ class HeadKey {
   }
 
   /**
-   * @param {!Uint8Array} ciphertext
+   * @param {!Uint8Array} encrypted_header
    * @param {!Uint8Array} nonce
    * @returns {Uint8Array}
    */
-  decrypt(ciphertext, nonce) {
-    return this.encrypt(ciphertext, nonce);
+  decrypt(encrypted_header, nonce) {
+    return this.encrypt(encrypted_header, nonce);
   }
 
   /**

@@ -735,17 +735,17 @@ class HeaderMessage extends Message {
   }
 
   /**
-   * @param {!Uint8Array} header - encrypted header
+   * @param {!Uint8Array} encrypted_header - encrypted header
    * @param {!Uint8Array} cipher_text
    * @returns {HeaderMessage} - `this`
    */
-  static new(header, cipher_text) {
-    TypeUtil.assert_is_instance(Uint8Array, header);
+  static new(encrypted_header, cipher_text) {
+    TypeUtil.assert_is_instance(Uint8Array, encrypted_header);
     TypeUtil.assert_is_instance(Uint8Array, cipher_text);
 
     const hm = ClassUtil.new_instance(HeaderMessage);
 
-    hm.header = header;
+    hm.header = encrypted_header;
     hm.cipher_text = cipher_text;
 
     Object.freeze(hm);
@@ -1559,7 +1559,6 @@ class HeadKey {
   /**
    * @param {!number} idx
    * @returns {Uint8Array}
-   * @private
    */
   static index_as_nonce(idx) {
     const nonce = new ArrayBuffer(8);
@@ -1579,12 +1578,12 @@ class HeadKey {
   }
 
   /**
-   * @param {!Uint8Array} ciphertext
+   * @param {!Uint8Array} encrypted_header
    * @param {!Uint8Array} nonce
    * @returns {Uint8Array}
    */
-  decrypt(ciphertext, nonce) {
-    return this.encrypt(ciphertext, nonce);
+  decrypt(encrypted_header, nonce) {
+    return this.encrypt(encrypted_header, nonce);
   }
 
   /**
@@ -6637,7 +6636,8 @@ class RecvChain {
     TypeUtil.assert_is_instance(Uint8Array, cipher_text);
 
     if (this.message_keys[0] && this.message_keys[0].counter > header.counter) {
-      throw new DecryptError.OutdatedMessage(`Message is out of sync. Message counter: ${header.counter}. Message chain counter: ${this.message_keys[0].counter}.`, DecryptError.CODE.CASE_208);
+      const message = `Message too old. Counter for oldest staged chain key is '${this.message_keys[0].counter}' while message counter is '${header.counter}'.`;
+      throw new DecryptError.OutdatedMessage(message, DecryptError.CODE.CASE_208);
     }
 
     const idx = this.message_keys.findIndex((mk) => {
@@ -6650,7 +6650,8 @@ class RecvChain {
 
     const mk = this.message_keys.splice(idx, 1)[0];
     if (!envelope.verify(mk.mac_key)) {
-      throw new DecryptError.InvalidSignature(`Decryption of a previous (older) message failed. Remote index is at '${header.counter}'. Local index is at '${this.chain_key.idx}'.`, DecryptError.CODE.CASE_210);
+      const message = `Envelope verification failed for message with counter behind. Message index is '${header.counter}' while receive chain index is '${this.chain_key.idx}'.`;
+      throw new DecryptError.InvalidSignature(message, DecryptError.CODE.CASE_210);
     }
 
     return mk.decrypt(cipher_text);
@@ -6665,7 +6666,10 @@ class RecvChain {
 
     const num = header.counter - this.chain_key.idx;
     if (num > RecvChain.MAX_COUNTER_GAP) {
-      throw new DecryptError.TooDistantFuture(null, DecryptError.CODE.CASE_211);
+      if (this.chain_key.idx === 0) {
+        throw new DecryptError.TooDistantFuture('Skipped too many message at the beginning of a receive chain.', DecryptError.CODE.CASE_211);
+      }
+      throw new DecryptError.TooDistantFuture(`Skipped too many message within a used receive chain. Receive chain counter is '${this.chain_key.idx}'`, DecryptError.CODE.CASE_212);
     }
 
     let keys = [];
@@ -6944,8 +6948,6 @@ const KeyPair = __webpack_require__(7);
 /**
  * @class SendChain
  * @throws {DontCallConstructor}
- *
- * extends `SendChain` for `SessionState`'s encode/decode compatibility
  */
 class SendChain {
   constructor() {
@@ -7206,7 +7208,7 @@ class SessionState {
 
   /**
    * @param {!keys.IdentityKey} identity_key - Public identity key of the local identity key pair
-   * @param {!Array<number|keys.PublicKey>} pending - Pending pre-key
+   * @param {Array<number|keys.PublicKey>} pending - Pending pre-key
    * @param {!(string|Uint8Array)} plaintext - The plaintext to encrypt
    * @returns {message.Envelope}
    */

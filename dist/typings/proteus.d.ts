@@ -13,14 +13,34 @@ export declare module derived {
     static new(key: Uint8Array): derived.MacKey;
   }
 
+  interface InitialDerivedSecrets extends derived.DerivedSecrets {
+    head_key: derived.HeadKey;
+  }
+
   class DerivedSecrets {
     constructor();
 
     cipher_key: derived.CipherKey;
     mac_key: derived.MacKey;
+    next_head_key: derived.HeadKey;
 
     static kdf(input: Array<number>, salt: Uint8Array, info: string): derived.DerivedSecrets;
-    static kdf_without_salt(input: Array<number>, info: string): derived.DerivedSecrets;
+    static kdf_init(input: Array<number>, salt: Uint8Array, info: string): derived.InitialDerivedSecrets;
+    static kdf_without_salt(input: Array<number>, info: string): derived.InitialDerivedSecrets;
+  }
+
+  class HeadKey {
+    constructor();
+
+    key: Uint8Array;
+
+    static decode(d: CBOR.Decoder): derived.HeadKey;
+    decrypt(encrypted_header: Uint8Array, nonce: Uint8Array): Uint8Array;
+    encode(e: CBOR.Encoder): CBOR.Encoder;
+    encrypt(header: ArrayBuffer, nonce: Uint8Array): Uint8Array;
+    static index_as_nonce(idx: number): Uint8Array;
+    static new(key: Uint8Array): derived.HeadKey;
+
   }
 
   class MacKey {
@@ -55,7 +75,19 @@ export declare module errors {
     message: string;
   }
 
+  class HeaderDecryptionFailed extends DecryptError {
+    constructor(message?: string, code?: string);
+    code: string;
+    message: string;
+  }
+
   class InputError extends ProteusError {
+    constructor(message?: string, code?: string);
+    code: string;
+    message: string;
+  }
+
+  class InvalidHeader extends DecryptError {
     constructor(message?: string, code?: string);
     code: string;
     message: string;
@@ -174,20 +206,6 @@ export declare module keys {
 }
 
 export declare module message {
-  class CipherMessage {
-    constructor();
-
-    cipher_text: Uint8Array;
-    counter: number;
-    prev_counter: number;
-    ratchet_key: keys.PublicKey;
-    session_tag: message.SessionTag;
-
-    static decode(d: CBOR.Decoder): message.CipherMessage;
-    encode(e: CBOR.Encoder): CBOR.Encoder;
-    static new(session_tag: message.SessionTag, counter: number, prev_counter: number, ratchet_key: keys.PublicKey, cipher_text: Uint8Array): message.CipherMessage;
-  }
-
   class Envelope {
     constructor();
 
@@ -204,6 +222,20 @@ export declare module message {
     verify(mac: derived.MacKey): boolean;
   }
 
+  class Header {
+    constructor();
+
+    couter: number;
+    prev_counter: number;
+    ratchet_key: keys.PublicKey
+
+    static decode(d: CBOR.Decoder): message.Header;
+    static deserialise(buf: ArrayBuffer): message.Header;
+    encode(e: CBOR.Encoder): CBOR.Encoder;
+    static new(counter: number, prev_counter: number, ratchet_key: keys.PublicKey): message.Header;
+    serialise(): ArrayBuffer;
+  }
+
   class Message {
     constructor();
 
@@ -211,28 +243,28 @@ export declare module message {
     serialise(): ArrayBuffer;
   }
 
+  class HeaderMessage {
+    constructor();
+
+    cipher_text: Uint8Array;
+    header: Uint8Array;
+
+    static decode(d: CBOR.Decoder): message.HeaderMessage;
+    encode(e: CBOR.Encoder): CBOR.Encoder;
+    static new(encrypted_header: Uint8Array, cipher_text: Uint8Array): message.HeaderMessage;
+  }
+
   class PreKeyMessage {
     constructor();
 
     base_key: keys.PublicKey;
     identity_key: keys.IdentityKey;
-    message: message.CipherMessage;
+    message: message.HeaderMessage;
     prekey_id: number;
 
     static decode(d: CBOR.Decoder): message.PreKeyMessage;
     encode(e: CBOR.Encoder): CBOR.Encoder;
-    static new(prekey_id: number, base_key: keys.PublicKey, identity_key: keys.IdentityKey, message: message.CipherMessage): message.PreKeyMessage;
-  }
-
-  class SessionTag {
-    constructor();
-
-    tag: Uint8Array;
-
-    encode(e: CBOR.Encoder): CBOR.Encoder;
-    static decode(d: CBOR.Decoder): message.SessionTag;
-    static new(): message.SessionTag;
-    tostring(): string;
+    static new(prekey_id: number, base_key: keys.PublicKey, identity_key: keys.IdentityKey, message: message.HeaderMessage): message.PreKeyMessage;
   }
 }
 
@@ -274,16 +306,23 @@ export declare module session {
   class RecvChain {
     constructor();
 
+    static MAX_COUNTER_GAP: number;
+
     chain_key: session.ChainKey;
     ratchet_key: keys.PublicKey;
+    head_key: derived.HeadKey;
+    final_count: any;
     message_keys: Array<session.MessageKeys>;
 
+    private static _try_head_key(start_index: number, end_index: number, encrypted_header: Uint8Array, head_key: derived.HeadKey): message.Header;
     commit_message_keys(keys: Array<session.MessageKeys>): void;
     static decode(d: CBOR.Decoder): session.RecvChain;
     encode(e: CBOR.Encoder): CBOR.Encoder;
-    static new(chain_key: session.ChainKey, public_key: keys.PublicKey): message.PreKeyMessage;
-    stage_message_keys(msg: message.CipherMessage): Array<session.ChainKey|session.MessageKeys>;
-    try_message_keys(envelope: message.Envelope, msg: message.CipherMessage): Uint8Array;
+    static new(chain_key: session.ChainKey, public_key: keys.PublicKey, head_key: derived.HeadKey): session.RecvChain;
+    stage_message_keys(header: message.Header): Array<session.ChainKey|session.MessageKeys>;
+    try_head_key(encrypted_header: Uint8Array): message.Header;
+    try_message_keys(envelope: message.Envelope, header: message.Header, cipher_text: Uint8Array): Uint8Array;
+    static try_next_head_key(encrypted_header: Uint8Array, next_head_key: derived.HeadKey): message.Header;
   }
 
   class RootKey {
@@ -292,7 +331,7 @@ export declare module session {
     key: derived.CipherKey;
 
     static decode(d: CBOR.Decoder): session.RootKey;
-    dh_ratchet(ours: keys.KeyPair, theirs: keys.PublicKey): Array<session.RootKey|session.ChainKey>;
+    dh_ratchet(ours: keys.KeyPair, theirs: keys.PublicKey): Array<session.RootKey|session.ChainKey|derived.HeadKey>;
     encode(e: CBOR.Encoder): CBOR.Encoder;
     static from_cipher_key(cipher_key: derived.CipherKey): session.RootKey;
   }
@@ -302,29 +341,34 @@ export declare module session {
 
     chain_key: session.ChainKey;
     ratchet_key: keys.KeyPair;
+    head_key: derived.HeadKey;
 
     static decode(d: CBOR.Decoder): session.SendChain;
     encode(e: CBOR.Encoder): CBOR.Encoder;
-    static new(chain_key: session.ChainKey, keypair: keys.KeyPair): session.SendChain;
+    static new(chain_key: session.ChainKey, keypair: keys.KeyPair, head_key: derived.HeadKey): session.SendChain;
   }
 
   interface SessionFromMessageTuple extends Array<session.Session | Uint8Array> { 0: session.Session; 1: Uint8Array; }
 
+  interface PendingPreKeyTuple extends Array<number | keys.PublicKey> { 0: number; 1: keys.PublicKey; }
+
   class Session {
     constructor();
 
-    counter: number;
+    static readonly MAX_RECV_CHAINS: number;
+    static readonly MAX_SESSION_STATES: number;
+
     local_identity: any;
     pending_prekey: any;
     remote_identity: any;
-    session_states: any;
-    session_tag: message.SessionTag;
+    session_states: Array<session.SessionState>;
     version: number;
 
-    private _decrypt_cipher_message(envelope: message.Envelope, msg: message.CipherMessage): Uint8Array;
-    private _evict_oldest_session_state(): void;
-    private _insert_session_state(tag: message.SessionTag, state: session.SessionState): number|void;
+    private _decrypt_header_message(envelope: message.Envelope, msg: message.Message, state_index: number): Uint8Array;
+    private _decrypt_prekey_message(envelope: message.Envelope, msg: message.Message, prekey_store: session.PreKeyStore): Promise<Uint8Array>;
+    private _insert_session_state(state: session.SessionState): boolean;
     private _new_state(prekey_store: session.PreKeyStore, prekey_message: message.PreKeyMessage): Promise<session.SessionState>;
+    private _try_decrypt_header_message(envelope: message.Envelope, message: message.Message, start: number): Promise<Uint8Array>
     static decode(local_identity: keys.IdentityKeyPair, d: CBOR.Decoder): session.Session;
     decrypt(prekey_store: session.PreKeyStore, envelope: message.Envelope): Promise<Uint8Array>;
     static deserialise(local_identity: keys.IdentityKeyPair, buf: ArrayBuffer): session.Session;
@@ -339,19 +383,21 @@ export declare module session {
   class SessionState {
     constructor();
 
+    next_recv_head_key: derived.HeadKey;
+    next_send_head_key: derived.HeadKey;
     prev_counter: number;
     recv_chains: Array<session.RecvChain>;
     root_key: session.RootKey;
     send_chain: session.SendChain;
 
     static decode(d: CBOR.Decoder): session.SessionState;
-    decrypt(envelope: message.Envelope, msg: message.CipherMessage): Uint8Array;
+    decrypt(envelope: message.Envelope, msg: message.HeaderMessage): Uint8Array;
     static deserialise(buf: ArrayBuffer): session.SessionState;
     encode(e: CBOR.Encoder): CBOR.Encoder;
-    encrypt(identity_key: keys.IdentityKey, pending: Array<number>, tag: message.SessionTag, plaintext: string|Uint8Array): message.Envelope;
+    encrypt(identity_key: keys.IdentityKey, pending: PendingPreKeyTuple, plaintext: string|Uint8Array): message.Envelope;
     static init_as_alice(alice_identity_pair: keys.IdentityKeyPair, alice_base: keys.KeyPair, bob_pkbundle: keys.PreKeyBundle): session.SessionState;
     static init_as_bob(bob_ident: keys.IdentityKeyPair, bob_prekey: keys.KeyPair, alice_ident: keys.IdentityKey, alice_base: keys.PublicKey): session.SessionState;
-    ratchet(ratchet_key: keys.KeyPair): void;
+    ratchet(ratchet_key: keys.KeyPair, prev_counter: number): void;
     serialise(): ArrayBuffer;
   }
 }
