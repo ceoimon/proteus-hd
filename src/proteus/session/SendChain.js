@@ -26,6 +26,7 @@ const DontCallConstructor = require('../errors/DontCallConstructor');
 const TypeUtil = require('../util/TypeUtil');
 
 const ChainKey = require('./ChainKey');
+const HeadKey = require('../derived/HeadKey');
 const KeyPair = require('../keys/KeyPair');
 
 /** @module session */
@@ -33,6 +34,8 @@ const KeyPair = require('../keys/KeyPair');
 /**
  * @class SendChain
  * @throws {DontCallConstructor}
+ *
+ * extends `SendChain` for `SessionState`'s encode/decode compatibility
  */
 class SendChain {
   constructor() {
@@ -42,15 +45,18 @@ class SendChain {
   /**
    * @param {!session.ChainKey} chain_key
    * @param {!keys.KeyPair} keypair
+   * @param {!derived.HeadKey} head_key
    * @returns {session.SendChain}
    */
-  static new(chain_key, keypair) {
+  static new(chain_key, keypair, head_key) {
     TypeUtil.assert_is_instance(ChainKey, chain_key);
     TypeUtil.assert_is_instance(KeyPair, keypair);
+    TypeUtil.assert_is_instance(HeadKey, head_key);
 
     const sc = ClassUtil.new_instance(SendChain);
     sc.chain_key = chain_key;
     sc.ratchet_key = keypair;
+    sc.head_key = head_key;
     return sc;
   }
 
@@ -59,11 +65,13 @@ class SendChain {
    * @returns {CBOR.Encoder}
    */
   encode(e) {
-    e.object(2);
+    e.object(3);
     e.u8(0);
     this.chain_key.encode(e);
     e.u8(1);
-    return this.ratchet_key.encode(e);
+    this.ratchet_key.encode(e);
+    e.u8(2);
+    return this.head_key.encode(e);
   }
 
   /**
@@ -82,12 +90,16 @@ class SendChain {
         case 1:
           self.ratchet_key = KeyPair.decode(d);
           break;
+        case 2:
+          self.head_key = HeadKey.decode(d);
+          break;
         default:
           d.skip();
       }
     }
     TypeUtil.assert_is_instance(ChainKey, self.chain_key);
     TypeUtil.assert_is_instance(KeyPair, self.ratchet_key);
+    TypeUtil.assert_is_instance(HeadKey, self.head_key);
     return self;
   }
 }

@@ -45,31 +45,7 @@ class DerivedSecrets {
    * @param {!string} info
    * @returns {DerivedSecrets} - `this`
    */
-  static kdf(input, salt, info) {
-    const byte_length = 64;
-
-    const output_key_material = KeyDerivationUtil.hkdf(salt, input, info, byte_length);
-
-    const cipher_key = new Uint8Array(output_key_material.buffer.slice(0, 32));
-    const mac_key = new Uint8Array(output_key_material.buffer.slice(32, 64));
-
-    MemoryUtil.zeroize(output_key_material.buffer);
-
-    const ds = ClassUtil.new_instance(DerivedSecrets);
-    /** @type {derived.CipherKey} */
-    ds.cipher_key = CipherKey.new(cipher_key);
-    /** @type {derived.MacKey} */
-    ds.mac_key = MacKey.new(mac_key);
-    return ds;
-  }
-
-  /**
-   * @param {!Array<number>} input
-   * @param {!Uint8Array} salt
-   * @param {!string} info
-   * @returns {DerivedSecrets} - `this`
-   */
-  static kdf_hd_init(input, salt, info) {
+  static kdf_init(input, salt, info) {
     const byte_length = 128;
 
     const output_key_material = KeyDerivationUtil.hkdf(salt, input, info, byte_length);
@@ -99,7 +75,7 @@ class DerivedSecrets {
    * @param {!string} info
    * @returns {DerivedSecrets} - `this`
    */
-  static kdf_hd(input, salt, info) {
+  static kdf(input, salt, info) {
     const byte_length = 96;
 
     const output_key_material = KeyDerivationUtil.hkdf(salt, input, info, byte_length);
@@ -126,16 +102,7 @@ class DerivedSecrets {
    * @returns {DerivedSecrets}
    */
   static kdf_without_salt(input, info) {
-    return this.kdf(input, new Uint8Array(0), info);
-  }
-
-  /**
-   * @param {!Array<number>} input - Initial key material (usually the Master Key) in byte array format
-   * @param {!string} info - Key Derivation Data
-   * @returns {DerivedSecrets}
-   */
-  static kdf_hd_without_salt(input, info) {
-    return this.kdf_hd_init(input, new Uint8Array(0), info);
+    return this.kdf_init(input, new Uint8Array(0), info);
   }
 }
 

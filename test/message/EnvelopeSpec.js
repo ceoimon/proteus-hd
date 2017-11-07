@@ -25,16 +25,6 @@ describe('Envelope', () => {
   const mk = Proteus.derived.MacKey.new(new Uint8Array(32).fill(1));
   const bk = Proteus.keys.KeyPair.new().public_key;
   const ik = Proteus.keys.IdentityKey.new(Proteus.keys.KeyPair.new().public_key);
-  const rk = Proteus.keys.KeyPair.new().public_key;
-
-  const tg = Proteus.message.SessionTag.new();
-
-  it('should encapsulate a CipherMessage', () => {
-    const msg = Proteus.message.CipherMessage.new(tg, 42, 3, rk, new Uint8Array([1, 2, 3, 4, 5]));
-    const env = Proteus.message.Envelope.new(mk, msg);
-
-    assert(env.verify(mk));
-  });
 
   it('should encapsulate a HeaderMessage', () => {
     const msg = Proteus.message.HeaderMessage.new(
@@ -49,18 +39,6 @@ describe('Envelope', () => {
   it('should encapsulate a PreKeyMessage', () => {
     const msg = Proteus.message.PreKeyMessage.new(
       42, bk, ik,
-      Proteus.message.CipherMessage.new(
-        tg, 42, 43, rk, new Uint8Array([1, 2, 3, 4])
-      )
-    );
-
-    const env = Proteus.message.Envelope.new(mk, msg);
-    assert(env.verify(mk));
-  });
-
-  it('should encapsulate a PreKeyMessageHd', () => {
-    const msg = Proteus.message.PreKeyMessageHd.new(
-      42, bk, ik,
       Proteus.message.HeaderMessage.new(
         new Uint8Array([1, 2, 3, 4, 5]),
         new Uint8Array([1, 2, 3, 4, 5])
@@ -74,8 +52,9 @@ describe('Envelope', () => {
   it('should encode to and decode from CBOR', () => {
     const msg = Proteus.message.PreKeyMessage.new(
       42, bk, ik,
-      Proteus.message.CipherMessage.new(
-        tg, 42, 43, rk, new Uint8Array([1, 2, 3, 4])
+      Proteus.message.HeaderMessage.new(
+        new Uint8Array([1, 2, 3, 4, 5]),
+        new Uint8Array([1, 2, 3, 4, 5])
       )
     );
 

@@ -57,7 +57,7 @@ class RootKey {
   /**
    * @param {!keys.KeyPair} ours - Our key pair
    * @param {!keys.PublicKey} theirs - Their public key
-   * @returns {Array<RootKey|session.ChainKey>}
+   * @returns {Array<RootKey|session.ChainKey|derived.HeadKey>}
    */
   dh_ratchet(ours, theirs) {
     TypeUtil.assert_is_instance(KeyPair, ours);
@@ -65,24 +65,6 @@ class RootKey {
 
     const secret = ours.secret_key.shared_secret(theirs);
     const derived_secrets = DerivedSecrets.kdf(secret, this.key.key, 'dh_ratchet');
-
-    return [
-      RootKey.from_cipher_key(derived_secrets.cipher_key),
-      ChainKey.from_mac_key(derived_secrets.mac_key, 0),
-    ];
-  }
-
-  /**
-   * @param {!keys.KeyPair} ours - Our key pair
-   * @param {!keys.PublicKey} theirs - Their public key
-   * @returns {Array<RootKey|session.ChainKey|derived.HeadKey>}
-   */
-  dh_ratchet_hd(ours, theirs) {
-    TypeUtil.assert_is_instance(KeyPair, ours);
-    TypeUtil.assert_is_instance(PublicKey, theirs);
-
-    const secret = ours.secret_key.shared_secret(theirs);
-    const derived_secrets = DerivedSecrets.kdf_hd(secret, this.key.key, 'dh_ratchet_hd');
 
     return [
       RootKey.from_cipher_key(derived_secrets.cipher_key),

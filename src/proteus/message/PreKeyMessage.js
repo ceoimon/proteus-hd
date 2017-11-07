@@ -28,7 +28,7 @@ const TypeUtil = require('../util/TypeUtil');
 const IdentityKey = require('../keys/IdentityKey');
 const PublicKey = require('../keys/PublicKey');
 
-const CipherMessage = require('./CipherMessage');
+const HeaderMessage = require('./HeaderMessage');
 const Message = require('./Message');
 
 /** @module message */
@@ -47,14 +47,14 @@ class PreKeyMessage extends Message {
    * @param {!number} prekey_id
    * @param {!keys.PublicKey} base_key
    * @param {!keys.IdentityKey} identity_key
-   * @param {!message.CipherMessage} message
+   * @param {!message.HeaderMessage} message
    * @returns {PreKeyMessage}
    */
   static new(prekey_id, base_key, identity_key, message) {
     TypeUtil.assert_is_integer(prekey_id);
     TypeUtil.assert_is_instance(PublicKey, base_key);
     TypeUtil.assert_is_instance(IdentityKey, identity_key);
-    TypeUtil.assert_is_instance(CipherMessage, message);
+    TypeUtil.assert_is_instance(HeaderMessage, message);
 
     const pkm = ClassUtil.new_instance(PreKeyMessage);
 
@@ -108,7 +108,7 @@ class PreKeyMessage extends Message {
           identity_key = IdentityKey.decode(d);
           break;
         case 3:
-          message = CipherMessage.decode(d);
+          message = HeaderMessage.decode(d);
           break;
         default:
           d.skip();

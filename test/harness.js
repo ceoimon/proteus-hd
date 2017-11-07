@@ -13,8 +13,6 @@ Proteus.derived = {
   MacKey: require('proteus/derived/MacKey')
 };
 
-Proteus.message.SessionTag = require('proteus/message/SessionTag');
-
 Proteus.util = {
   KeyDerivationUtil: require('proteus/util/KeyDerivationUtil'),
   ArrayUtil: require('proteus/util/ArrayUtil'),

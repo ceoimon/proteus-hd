@@ -40,14 +40,10 @@ class Message {
   /** @returns {ArrayBuffer} */
   serialise() {
     const e = new CBOR.Encoder();
-    if (this instanceof CipherMessage) {
+    if (this instanceof HeaderMessage) {
       e.u8(1);
     } else if (this instanceof PreKeyMessage) {
       e.u8(2);
-    } else if (this instanceof HeaderMessage) {
-      e.u8(3);
-    } else if (this instanceof PreKeyMessageHd) {
-      e.u8(4);
     } else {
       throw new TypeError('Unexpected message type', 9);
     }
@@ -58,7 +54,7 @@ class Message {
 
   /**
    * @param {!ArrayBuffer} buf
-   * @returns {message.CipherMessage|message.PreKeyMessage|message.HeaderMessage|message.PreKeyMessageHd}
+   * @returns {message.HeaderMessage|message.PreKeyMessage}
    */
   static deserialise(buf) {
     TypeUtil.assert_is_instance(ArrayBuffer, buf);
@@ -67,13 +63,9 @@ class Message {
 
     switch (d.u8()) {
       case 1:
-        return CipherMessage.decode(d);
+        return HeaderMessage.decode(d);
       case 2:
         return PreKeyMessage.decode(d);
-      case 3:
-        return HeaderMessage.decode(d);
-      case 4:
-        return PreKeyMessageHd.decode(d);
       default:
         throw new DecodeError.InvalidType('Unrecognised message type', DecodeError.CODE.CASE_302);
     }
@@ -84,7 +76,5 @@ module.exports = Message;
 
 // these require lines have to come after the Message definition because otherwise
 // it creates a circular dependency with the message subtypes
-const CipherMessage = require('./CipherMessage');
-const PreKeyMessage = require('./PreKeyMessage');
 const HeaderMessage = require('./HeaderMessage');
-const PreKeyMessageHd = require('./PreKeyMessageHd');
+const PreKeyMessage = require('./PreKeyMessage');
