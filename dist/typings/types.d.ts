@@ -118,23 +118,22 @@ export module derived {
        /**
         * @param {!number} idx
         * @returns {Uint8Array}
-        * @private
         */
-       private static index_as_nonce(idx: number): Uint8Array;
+       static index_as_nonce(idx: number): Uint8Array;
 
        /**
-        * @param {!ArrayBuffer} header - The serialized header to encrypt
+        * @param {!ArrayBuffer} encrypted_header - The serialized header to encrypt
         * @param {!Uint8Array} nonce
         * @returns {Uint8Array} - Encrypted payload
         */
-       encrypt(header: ArrayBuffer, nonce: Uint8Array): Uint8Array;
+       encrypt(encrypted_header: ArrayBuffer, nonce: Uint8Array): Uint8Array;
 
        /**
-        * @param {!Uint8Array} ciphertext
+        * @param {!Uint8Array} encrypted_header
         * @param {!Uint8Array} nonce
         * @returns {Uint8Array}
         */
-       decrypt(ciphertext: Uint8Array, nonce: Uint8Array): Uint8Array;
+       decrypt(encrypted_header: Uint8Array, nonce: Uint8Array): Uint8Array;
 
        /**
         * @param {!CBOR.Encoder} e
@@ -1011,11 +1010,11 @@ export module message {
        constructor();
 
        /**
-        * @param {!Uint8Array} header - encrypted header
+        * @param {!Uint8Array} encrypted_header - encrypted header
         * @param {!Uint8Array} cipher_text
         * @returns {HeaderMessage} - `this`
         */
-       static new(header: Uint8Array, cipher_text: Uint8Array): HeaderMessage;
+       static new(encrypted_header: Uint8Array, cipher_text: Uint8Array): HeaderMessage;
 
        /**
         * @param {!CBOR.Encoder} e
@@ -1047,9 +1046,9 @@ export module message {
 
        /**
         * @param {!ArrayBuffer} buf
-        * @returns {message.CipherMessage|message.PreKeyMessage}
+        * @returns {message.CipherMessage|message.PreKeyMessage|message.HeaderMessage|message.PreKeyMessageHd}
         */
-       static deserialise(buf: ArrayBuffer): (message.CipherMessage|message.PreKeyMessage);
+       static deserialise(buf: ArrayBuffer): (message.CipherMessage|message.PreKeyMessage|message.HeaderMessage|message.PreKeyMessageHd);
 
    }
 
@@ -1482,15 +1481,11 @@ export module session {
    /**
     * @class SendChainHd
     * @throws {DontCallConstructor}
-    *
-    * extends `SendChain` for `SessionState`'s encode/decode compatibility
     */
    class SendChainHd {
        /**
         * @class SendChainHd
         * @throws {DontCallConstructor}
-        *
-        * extends `SendChain` for `SessionState`'s encode/decode compatibility
         */
        constructor();
 
@@ -1704,31 +1699,31 @@ export module session {
 
        /**
         * @param {!message.Envelope} envelope
-        * @param {!message.Message} msg
+        * @param {!message.PreKeyMessageHd} msg
         * @param {!session.PreKeyStore} prekey_store
         * @private
         * @returns {Promise<Uint8Array>}
         * @throws {errors.DecryptError}
         */
-       private _decrypt_prekey_message(envelope: message.Envelope, msg: message.Message, prekey_store: session.PreKeyStore): Promise<Uint8Array>;
+       private _decrypt_prekey_message(envelope: message.Envelope, msg: message.PreKeyMessageHd, prekey_store: session.PreKeyStore): Promise<Uint8Array>;
 
        /**
         * @param {!message.Envelope} envelope
-        * @param {!message.Message} message
+        * @param {!message.HeaderMessage} message
         * @param {!number} start
         * @private
         * @returns {Promise<Uint8Array>}
         */
-       private _try_decrypt_header_message(envelope: message.Envelope, message: message.Message, start: number): Promise<Uint8Array>;
+       private _try_decrypt_header_message(envelope: message.Envelope, message: message.HeaderMessage, start: number): Promise<Uint8Array>;
 
        /**
         * @param {!message.Envelope} envelope
-        * @param {!message.Message} msg
+        * @param {!message.HeaderMessage} msg
         * @param {number} state_index
         * @private
         * @returns {Uint8Array}
         */
-       private _decrypt_header_message(envelope: message.Envelope, msg: message.Message, state_index: number): Uint8Array;
+       private _decrypt_header_message(envelope: message.Envelope, msg: message.HeaderMessage, state_index: number): Uint8Array;
 
        /**
         * @returns {ArrayBuffer}

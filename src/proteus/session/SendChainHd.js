@@ -34,8 +34,6 @@ const KeyPair = require('../keys/KeyPair');
 /**
  * @class SendChainHd
  * @throws {DontCallConstructor}
- *
- * extends `SendChain` for `SessionState`'s encode/decode compatibility
  */
 class SendChainHd {
   constructor() {

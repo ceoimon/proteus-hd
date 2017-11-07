@@ -241,7 +241,7 @@ class SessionHd {
 
   /**
    * @param {!message.Envelope} envelope
-   * @param {!message.Message} msg
+   * @param {!message.PreKeyMessageHd} msg
    * @param {!session.PreKeyStore} prekey_store
    * @private
    * @returns {Promise<Uint8Array>}
@@ -293,7 +293,7 @@ class SessionHd {
 
   /**
    * @param {!message.Envelope} envelope
-   * @param {!message.Message} message
+   * @param {!message.HeaderMessage} message
    * @param {!number} start
    * @private
    * @returns {Promise<Uint8Array>}
@@ -330,7 +330,7 @@ class SessionHd {
 
   /**
    * @param {!message.Envelope} envelope
-   * @param {!message.Message} msg
+   * @param {!message.HeaderMessage} msg
    * @param {number} state_index
    * @private
    * @returns {Uint8Array}

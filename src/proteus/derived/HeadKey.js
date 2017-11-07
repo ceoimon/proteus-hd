@@ -53,7 +53,6 @@ class HeadKey {
   /**
    * @param {!number} idx
    * @returns {Uint8Array}
-   * @private
    */
   static index_as_nonce(idx) {
     const nonce = new ArrayBuffer(8);
@@ -62,23 +61,23 @@ class HeadKey {
   }
 
   /**
-   * @param {!ArrayBuffer} header - The serialized header to encrypt
+   * @param {!ArrayBuffer} encrypted_header - The serialized header to encrypt
    * @param {!Uint8Array} nonce
    * @returns {Uint8Array} - Encrypted payload
    */
-  encrypt(header, nonce) {
-    header = new Uint8Array(header);
+  encrypt(encrypted_header, nonce) {
+    encrypted_header = new Uint8Array(encrypted_header);
 
-    return sodium.crypto_stream_chacha20_xor(header, nonce, this.key, 'uint8array');
+    return sodium.crypto_stream_chacha20_xor(encrypted_header, nonce, this.key, 'uint8array');
   }
 
   /**
-   * @param {!Uint8Array} ciphertext
+   * @param {!Uint8Array} encrypted_header
    * @param {!Uint8Array} nonce
    * @returns {Uint8Array}
    */
-  decrypt(ciphertext, nonce) {
-    return this.encrypt(ciphertext, nonce);
+  decrypt(encrypted_header, nonce) {
+    return this.encrypt(encrypted_header, nonce);
   }
 
   /**
