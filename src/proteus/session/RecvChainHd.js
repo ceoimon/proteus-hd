@@ -30,19 +30,20 @@ const PublicKey = require('../keys/PublicKey');
 const DecryptError = require('../errors/DecryptError');
 const ProteusError = require('../errors/ProteusError');
 
-const CipherMessage = require('../message/CipherMessage');
+const Header = require('../message/Header');
 const Envelope = require('../message/Envelope');
 
 const ChainKey = require('./ChainKey');
+const HeadKey = require('../derived/HeadKey');
 const MessageKeys = require('./MessageKeys');
 
 /** @module session */
 
 /**
- * @class RecvChain
+ * @class RecvChainHd
  * @throws {DontCallConstructor}
  */
-class RecvChain {
+class RecvChainHd {
   constructor() {
     throw new DontCallConstructor(this);
   }
@@ -50,35 +51,99 @@ class RecvChain {
   /**
    * @param {!session.ChainKey} chain_key
    * @param {!keys.PublicKey} public_key
-   * @returns {RecvChain}
+   * @param {!derived.HeadKey} head_key
+   * @returns {session.RecvChainHd}
    */
-  static new(chain_key, public_key) {
+  static new(chain_key, public_key, head_key) {
     TypeUtil.assert_is_instance(ChainKey, chain_key);
     TypeUtil.assert_is_instance(PublicKey, public_key);
 
-    const rc = ClassUtil.new_instance(RecvChain);
+    const rc = ClassUtil.new_instance(RecvChainHd);
     rc.chain_key = chain_key;
     rc.ratchet_key = public_key;
+    rc.head_key = head_key;
+    rc.final_count = null;
     rc.message_keys = [];
     return rc;
   }
 
   /**
+   * @param {!number} start_index
+   * @param {!number} end_index
+   * @param {!Uint8Array} encrypted_header - encrypted header
+   * @param {!derived.HeadKey} head_key
+   * @returns {message.Header}
+   * @private
+   */
+  static _try_head_key(start_index, end_index, encrypted_header, head_key) {
+    const [header, index] = (() => {
+      for (let i = start_index; i <= end_index; i++) {
+        try {
+          const header_typed_array = head_key.decrypt(encrypted_header, HeadKey.index_as_nonce(i));
+          return [Header.deserialise(header_typed_array.buffer), i];
+        } catch (err) {
+          // noop
+        }
+      }
+      return [null, 0];
+    })();
+
+    if (!header) {
+      throw new DecryptError.HeaderDecryptionFailed('Head key not match', DecryptError.CODE.CASE_213);
+    }
+
+    if (header.counter !== index) {
+      throw new DecryptError.InvalidHeader('Invalid header', DecryptError.CODE.CASE_214);
+    }
+
+    return header;
+  }
+
+  /**
+   * @param {!Uint8Array} encrypted_header - encrypted header
+   * @param {!derived.HeadKey} next_head_key
+   * @returns {message.Header}
+   */
+  static try_next_head_key(encrypted_header, next_head_key) {
+
+    return RecvChainHd._try_head_key(0, RecvChainHd.MAX_COUNTER_GAP, encrypted_header, next_head_key);
+  }
+
+  /**
+   * @param {!Uint8Array} encrypted_header - encrypted header
+   * @returns {message.Header}
+   */
+  try_head_key(encrypted_header) {
+    const final_count = this.final_count;
+
+    const start_index = this.message_keys.length > 0
+      ? this.message_keys[0].counter
+      : this.chain_key.idx;
+    const end_index = final_count !== null
+      ? final_count - 1
+      : start_index + RecvChainHd.MAX_COUNTER_GAP;
+
+    return RecvChainHd._try_head_key(start_index, end_index, encrypted_header, this.head_key);
+  }
+
+  /**
    * @param {!message.Envelope} envelope
-   * @param {!message.CipherMessage} msg
+   * @param {!message.Header} header
+   * @param {!Uint8Array} cipher_text
    * @returns {Uint8Array}
    */
-  try_message_keys(envelope, msg) {
+  try_message_keys(envelope, header, cipher_text) {
     TypeUtil.assert_is_instance(Envelope, envelope);
-    TypeUtil.assert_is_instance(CipherMessage, msg);
+    TypeUtil.assert_is_instance(Header, header);
+    TypeUtil.assert_is_instance(Uint8Array, cipher_text);
 
-    if (this.message_keys[0] && this.message_keys[0].counter > msg.counter) {
-      const message = `Message too old. Counter for oldest staged chain key is '${this.message_keys[0].counter}' while message counter is '${msg.counter}'.`;
+    if (this.message_keys[0] && this.message_keys[0].counter > header.counter) {
+      const message = `Message too old. Counter for oldest staged chain key is '${this.message_keys[0].counter}' while message counter is '${header.counter}'.`;
       throw new DecryptError.OutdatedMessage(message, DecryptError.CODE.CASE_208);
     }
 
     const idx = this.message_keys.findIndex((mk) => {
-      return mk.counter === msg.counter;
+      return mk.counter === header.counter;
     });
 
     if (idx === -1) {
@@ -87,22 +152,22 @@ class RecvChain {
 
     const mk = this.message_keys.splice(idx, 1)[0];
     if (!envelope.verify(mk.mac_key)) {
-      const message = `Envelope verification failed for message with counter behind. Message index is '${msg.counter}' while receive chain index is '${this.chain_key.idx}'.`;
+      const message = `Envelope verification failed for message with counter behind. Message index is '${header.counter}' while receive chain index is '${this.chain_key.idx}'.`;
       throw new DecryptError.InvalidSignature(message, DecryptError.CODE.CASE_210);
     }
 
-    return mk.decrypt(msg.cipher_text);
+    return mk.decrypt(cipher_text);
   }
 
   /**
-   * @param {!message.CipherMessage} msg
+   * @param {!message.Header} header
    * @returns {Array<session.ChainKey>|session.MessageKeys}
    */
-  stage_message_keys(msg) {
-    TypeUtil.assert_is_instance(CipherMessage, msg);
+  stage_message_keys(header) {
+    TypeUtil.assert_is_instance(Header, header);
 
-    const num = msg.counter - this.chain_key.idx;
-    if (num > RecvChain.MAX_COUNTER_GAP) {
+    const num = header.counter - this.chain_key.idx;
+    if (num > RecvChainHd.MAX_COUNTER_GAP) {
       if (this.chain_key.idx === 0) {
         throw new DecryptError.TooDistantFuture('Skipped too many message at the beginning of a receive chain.', DecryptError.CODE.CASE_211);
       }
@@ -129,11 +194,11 @@ class RecvChain {
     TypeUtil.assert_is_instance(Array, keys);
     keys.map((k) => TypeUtil.assert_is_instance(MessageKeys, k));
 
-    if (keys.length > RecvChain.MAX_COUNTER_GAP) {
-      throw new ProteusError(`Number of message keys (${keys.length}) exceed message chain counter gap (${RecvChain.MAX_COUNTER_GAP}).`, ProteusError.prototype.CODE.CASE_103);
+    if (keys.length > RecvChainHd.MAX_COUNTER_GAP) {
+      throw new ProteusError(`Number of message keys (${keys.length}) exceed message chain counter gap (${RecvChainHd.MAX_COUNTER_GAP}).`, ProteusError.prototype.CODE.CASE_103);
     }
 
-    const excess = this.message_keys.length + keys.length - RecvChain.MAX_COUNTER_GAP;
+    const excess = this.message_keys.length + keys.length - RecvChainHd.MAX_COUNTER_GAP;
 
     for (let i = 0; i <= excess - 1; i++) {
       this.message_keys.shift();
@@ -141,8 +206,8 @@ class RecvChain {
 
     keys.map((k) => this.message_keys.push(k));
 
-    if (keys.length > RecvChain.MAX_COUNTER_GAP) {
-      throw new ProteusError(`Skipped message keys which exceed the message chain counter gap (${RecvChain.MAX_COUNTER_GAP}).`, ProteusError.prototype.CODE.CASE_104);
+    if (keys.length > RecvChainHd.MAX_COUNTER_GAP) {
+      throw new ProteusError(`Skipped message keys which exceed the message chain counter gap (${RecvChainHd.MAX_COUNTER_GAP}).`, ProteusError.prototype.CODE.CASE_104);
     }
   }
 
@@ -151,25 +216,33 @@ class RecvChain {
    * @returns {Array<CBOR.Encoder>}
    */
   encode(e) {
-    e.object(3);
+    e.object(5);
     e.u8(0);
     this.chain_key.encode(e);
     e.u8(1);
     this.ratchet_key.encode(e);
-
     e.u8(2);
+    this.head_key.encode(e);
+    e.u8(3);
+    if (this.final_count !== null) {
+      e.u32(this.final_count);
+    } else {
+      e.null();
+    }
+
+    e.u8(4);
     e.array(this.message_keys.length);
     return this.message_keys.map((k) => k.encode(e));
   }
 
   /**
    * @param {!CBOR.Decoder} d
-   * @returns {RecvChain}
+   * @returns {RecvChainHd}
    */
   static decode(d) {
     TypeUtil.assert_is_instance(CBOR.Decoder, d);
 
-    const self = ClassUtil.new_instance(RecvChain);
+    const self = ClassUtil.new_instance(RecvChainHd);
 
     const nprops = d.object();
     for (let i = 0; i <= nprops - 1; i++) {
@@ -183,6 +256,14 @@ class RecvChain {
           break;
         }
         case 2: {
+          self.head_key = HeadKey.decode(d);
+          break;
+        }
+        case 3: {
+          self.final_count = d.optional(() => d.u32());
+          break;
+        }
+        case 4: {
           self.message_keys = [];
 
           let len = d.array();
@@ -199,6 +280,7 @@ class RecvChain {
 
     TypeUtil.assert_is_instance(ChainKey, self.chain_key);
     TypeUtil.assert_is_instance(PublicKey, self.ratchet_key);
+    TypeUtil.assert_is_instance(HeadKey, self.head_key);
     TypeUtil.assert_is_instance(Array, self.message_keys);
 
     return self;
@@ -206,6 +288,6 @@ class RecvChain {
 }
 
 /** @type {number} */
-RecvChain.MAX_COUNTER_GAP = 1000;
+RecvChainHd.MAX_COUNTER_GAP = 1000;
 
-module.exports = RecvChain;
+module.exports = RecvChainHd;

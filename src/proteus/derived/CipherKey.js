@@ -51,7 +51,7 @@ class CipherKey {
   }
 
   /**
-   * @param {!(ArrayBuffer|String|Uint8Array)} plaintext - The text to encrypt
+   * @param {!(ArrayBuffer|string|Uint8Array)} plaintext - The text to encrypt
    * @param {!Uint8Array} nonce - Counter as nonce
    * @returns {Uint8Array} - Encrypted payload
    */

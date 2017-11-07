@@ -48,6 +48,10 @@ class DecryptError extends ProteusError {
       CASE_210: 210,
       CASE_211: 211,
       CASE_212: 212,
+      CASE_213: 213,
+      CASE_214: 214,
+      CASE_215: 215,
+      CASE_216: 216,
     };
   }
 }
@@ -129,6 +133,28 @@ class PrekeyNotFound extends DecryptError {
   }
 }
 
+/**
+ * @extends DecryptError
+ * @param {string} [message]
+ * @param {string} [code]
+ */
+class HeaderDecryptionFailed extends DecryptError {
+  constructor(message = 'Header descryption failed', code) {
+    super(message, code);
+  }
+}
+
+/**
+ * @extends DecryptError
+ * @param {string} [message]
+ * @param {string} [code]
+ */
+class InvalidHeader extends DecryptError {
+  constructor(message = 'Invalid header', code) {
+    super(message, code);
+  }
+}
+
 Object.assign(DecryptError, {
   RemoteIdentityChanged,
   InvalidSignature,
@@ -137,6 +163,8 @@ Object.assign(DecryptError, {
   TooDistantFuture,
   OutdatedMessage,
   PrekeyNotFound,
+  HeaderDecryptionFailed,
+  InvalidHeader,
 });
 
 module.exports = ProteusError.DecryptError = DecryptError;

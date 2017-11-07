@@ -43,10 +43,14 @@ module.exports = {
     CipherMessage: require('./proteus/message/CipherMessage'),
     PreKeyMessage: require('./proteus/message/PreKeyMessage'),
     Envelope: require('./proteus/message/Envelope'),
+    PreKeyMessageHd: require('./proteus/message/PreKeyMessageHd'),
+    Header: require('./proteus/message/Header'),
+    HeaderMessage: require('./proteus/message/HeaderMessage'),
   },
 
   session: {
     PreKeyStore: require('./proteus/session/PreKeyStore'),
     Session: require('./proteus/session/Session'),
+    SessionHd: require('./proteus/session/SessionHd'),
   },
 };

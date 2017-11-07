@@ -1,0 +1,10 @@
+{
+  "globals": {
+    "Proteus": true,
+    "assert": true,
+    "sodium": true
+  },
+  "env": {
+    "mocha": true
+  }
+}

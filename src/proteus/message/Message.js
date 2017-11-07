@@ -44,6 +44,10 @@ class Message {
       e.u8(1);
     } else if (this instanceof PreKeyMessage) {
       e.u8(2);
+    } else if (this instanceof HeaderMessage) {
+      e.u8(3);
+    } else if (this instanceof PreKeyMessageHd) {
+      e.u8(4);
     } else {
       throw new TypeError('Unexpected message type', 9);
     }
@@ -54,7 +58,7 @@ class Message {
 
   /**
    * @param {!ArrayBuffer} buf
-   * @returns {message.CipherMessage|message.PreKeyMessage}
+   * @returns {message.CipherMessage|message.PreKeyMessage|message.HeaderMessage|message.PreKeyMessageHd}
    */
   static deserialise(buf) {
     TypeUtil.assert_is_instance(ArrayBuffer, buf);
@@ -66,6 +70,10 @@ class Message {
         return CipherMessage.decode(d);
       case 2:
         return PreKeyMessage.decode(d);
+      case 3:
+        return HeaderMessage.decode(d);
+      case 4:
+        return PreKeyMessageHd.decode(d);
       default:
         throw new DecodeError.InvalidType('Unrecognised message type', DecodeError.CODE.CASE_302);
     }
@@ -78,3 +86,5 @@ module.exports = Message;
 // it creates a circular dependency with the message subtypes
 const CipherMessage = require('./CipherMessage');
 const PreKeyMessage = require('./PreKeyMessage');
+const HeaderMessage = require('./HeaderMessage');
+const PreKeyMessageHd = require('./PreKeyMessageHd');

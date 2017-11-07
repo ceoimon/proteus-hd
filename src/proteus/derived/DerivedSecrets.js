@@ -26,6 +26,7 @@ const MemoryUtil = require('../util/MemoryUtil');
 
 const CipherKey = require('./CipherKey');
 const MacKey = require('./MacKey');
+const HeadKey = require('./HeadKey');
 
 /** @module derived */
 
@@ -63,12 +64,78 @@ class DerivedSecrets {
   }
 
   /**
+   * @param {!Array<number>} input
+   * @param {!Uint8Array} salt
+   * @param {!string} info
+   * @returns {DerivedSecrets} - `this`
+   */
+  static kdf_hd_init(input, salt, info) {
+    const byte_length = 128;
+
+    const output_key_material = KeyDerivationUtil.hkdf(salt, input, info, byte_length);
+
+    const cipher_key = new Uint8Array(output_key_material.buffer.slice(0, 32));
+    const mac_key = new Uint8Array(output_key_material.buffer.slice(32, 64));
+    const head_key = new Uint8Array(output_key_material.buffer.slice(64, 96));
+    const next_head_key = new Uint8Array(output_key_material.buffer.slice(96, 128));
+
+    MemoryUtil.zeroize(output_key_material.buffer);
+
+    const ds = ClassUtil.new_instance(DerivedSecrets);
+    /** @type {derived.CipherKey} */
+    ds.cipher_key = CipherKey.new(cipher_key);
+    /** @type {derived.MacKey} */
+    ds.mac_key = MacKey.new(mac_key);
+    /** @type {derived.HeadKey} */
+    ds.head_key_alice = HeadKey.new(head_key);
+    /** @type {derived.HeadKey} */
+    ds.next_head_key_bob = HeadKey.new(next_head_key);
+    return ds;
+  }
+
+  /**
+   * @param {!Array<number>} input
+   * @param {!Uint8Array} salt
+   * @param {!string} info
+   * @returns {DerivedSecrets} - `this`
+   */
+  static kdf_hd(input, salt, info) {
+    const byte_length = 96;
+
+    const output_key_material = KeyDerivationUtil.hkdf(salt, input, info, byte_length);
+
+    const cipher_key = new Uint8Array(output_key_material.buffer.slice(0, 32));
+    const mac_key = new Uint8Array(output_key_material.buffer.slice(32, 64));
+    const next_head_key = new Uint8Array(output_key_material.buffer.slice(64, 96));
+
+    MemoryUtil.zeroize(output_key_material.buffer);
+
+    const ds = ClassUtil.new_instance(DerivedSecrets);
+    /** @type {derived.CipherKey} */
+    ds.cipher_key = CipherKey.new(cipher_key);
+    /** @type {derived.MacKey} */
+    ds.mac_key = MacKey.new(mac_key);
+    /** @type {derived.HeadKey} */
+    ds.next_head_key = HeadKey.new(next_head_key);
+    return ds;
+  }
+
+  /**
    * @param {!Array<number>} input - Initial key material (usually the Master Key) in byte array format
    * @param {!string} info - Key Derivation Data
    * @returns {DerivedSecrets}
    */
   static kdf_without_salt(input, info) {
     return this.kdf(input, new Uint8Array(0), info);
+  }
+
+  /**
+   * @param {!Array<number>} input - Initial key material (usually the Master Key) in byte array format
+   * @param {!string} info - Key Derivation Data
+   * @returns {DerivedSecrets}
+   */
+  static kdf_hd_without_salt(input, info) {
+    return this.kdf_hd_init(input, new Uint8Array(0), info);
   }
 }
 

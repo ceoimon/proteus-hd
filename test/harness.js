@@ -9,6 +9,7 @@ Proteus = require('proteus');
 Proteus.derived = {
   DerivedSecrets: require('proteus/derived/DerivedSecrets'),
   CipherKey: require('proteus/derived/CipherKey'),
+  HeadKey: require('proteus/derived/HeadKey'),
   MacKey: require('proteus/derived/MacKey')
 };
 

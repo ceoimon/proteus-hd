@@ -20,11 +20,11 @@ export module derived {
        static new(key: Uint8Array): CipherKey;
 
        /**
-        * @param {!(ArrayBuffer|String|Uint8Array)} plaintext - The text to encrypt
+        * @param {!(ArrayBuffer|string|Uint8Array)} plaintext - The text to encrypt
         * @param {!Uint8Array} nonce - Counter as nonce
         * @returns {Uint8Array} - Encrypted payload
         */
-       encrypt(plaintext: (ArrayBuffer|String|Uint8Array), nonce: Uint8Array): Uint8Array;
+       encrypt(plaintext: (ArrayBuffer|string|Uint8Array), nonce: Uint8Array): Uint8Array;
 
        /**
         * @param {!Uint8Array} ciphertext
@@ -67,11 +67,86 @@ export module derived {
        static kdf(input: number[], salt: Uint8Array, info: string): DerivedSecrets;
 
        /**
+        * @param {!Array<number>} input
+        * @param {!Uint8Array} salt
+        * @param {!string} info
+        * @returns {DerivedSecrets} - `this`
+        */
+       static kdf_hd_init(input: number[], salt: Uint8Array, info: string): DerivedSecrets;
+
+       /**
+        * @param {!Array<number>} input
+        * @param {!Uint8Array} salt
+        * @param {!string} info
+        * @returns {DerivedSecrets} - `this`
+        */
+       static kdf_hd(input: number[], salt: Uint8Array, info: string): DerivedSecrets;
+
+       /**
         * @param {!Array<number>} input - Initial key material (usually the Master Key) in byte array format
         * @param {!string} info - Key Derivation Data
         * @returns {DerivedSecrets}
         */
        static kdf_without_salt(input: number[], info: string): DerivedSecrets;
+
+       /**
+        * @param {!Array<number>} input - Initial key material (usually the Master Key) in byte array format
+        * @param {!string} info - Key Derivation Data
+        * @returns {DerivedSecrets}
+        */
+       static kdf_hd_without_salt(input: number[], info: string): DerivedSecrets;
+
+   }
+
+   /**
+    * @class HeadKey
+    * @throws {DontCallConstructor}
+    */
+   class HeadKey {
+       /**
+        * @class HeadKey
+        * @throws {DontCallConstructor}
+        */
+       constructor();
+
+       /**
+        * @param {!Uint8Array} key
+        * @returns {HeadKey} - `this`
+        */
+       static new(key: Uint8Array): HeadKey;
+
+       /**
+        * @param {!number} idx
+        * @returns {Uint8Array}
+        * @private
+        */
+       private static index_as_nonce(idx: number): Uint8Array;
+
+       /**
+        * @param {!ArrayBuffer} header - The serialized header to encrypt
+        * @param {!Uint8Array} nonce
+        * @returns {Uint8Array} - Encrypted payload
+        */
+       encrypt(header: ArrayBuffer, nonce: Uint8Array): Uint8Array;
+
+       /**
+        * @param {!Uint8Array} ciphertext
+        * @param {!Uint8Array} nonce
+        * @returns {Uint8Array}
+        */
+       decrypt(ciphertext: Uint8Array, nonce: Uint8Array): Uint8Array;
+
+       /**
+        * @param {!CBOR.Encoder} e
+        * @returns {CBOR.Encoder}
+        */
+       encode(e: CBOR.Encoder): CBOR.Encoder;
+
+       /**
+        * @param {!CBOR.Encoder} d
+        * @returns {HeadKey}
+        */
+       static decode(d: CBOR.Encoder): HeadKey;
 
    }
 
@@ -314,6 +389,36 @@ export module errors {
    }
 
    /**
+    * @extends DecryptError
+    * @param {string} [message]
+    * @param {string} [code]
+    */
+   class HeaderDecryptionFailed extends DecryptError {
+       /**
+        * @extends DecryptError
+        * @param {string} [message]
+        * @param {string} [code]
+        */
+       constructor(message?: string, code?: string);
+
+   }
+
+   /**
+    * @extends DecryptError
+    * @param {string} [message]
+    * @param {string} [code]
+    */
+   class InvalidHeader extends DecryptError {
+       /**
+        * @extends DecryptError
+        * @param {string} [message]
+        * @param {string} [code]
+        */
+       constructor(message?: string, code?: string);
+
+   }
+
+   /**
     * @class DontCallConstructor
     * @extends Error
     * @returns {DontCallConstructor} - `this`
@@ -418,10 +523,10 @@ export module keys {
        constructor();
 
        /**
-        * @param {!IdentityKey} public_key
+        * @param {!PublicKey} public_key
         * @returns {IdentityKey} - `this`
         */
-       static new(public_key: IdentityKey): IdentityKey;
+       static new(public_key: PublicKey): IdentityKey;
 
        /** @returns {string} */
        fingerprint(): string;
@@ -853,6 +958,80 @@ export module message {
    }
 
    /**
+    * @class Header
+    * @throws {DontCallConstructor}
+    */
+   class Header {
+       /**
+        * @class Header
+        * @throws {DontCallConstructor}
+        */
+       constructor();
+
+       /**
+        * @param {!number} counter
+        * @param {!number} prev_counter
+        * @param {!keys.PublicKey} ratchet_key
+        * @returns {Header} - `this`
+        */
+       static new(counter: number, prev_counter: number, ratchet_key: keys.PublicKey): Header;
+
+       /** @returns {ArrayBuffer} - The serialized header */
+       serialise(): ArrayBuffer;
+
+       /**
+        * @param {!ArrayBuffer} buf
+        * @returns {Header}
+        */
+       static deserialise(buf: ArrayBuffer): Header;
+
+       /**
+        * @param {!CBOR.Encoder} e
+        * @returns {CBOR.Encoder}
+        */
+       encode(e: CBOR.Encoder): CBOR.Encoder;
+
+       /**
+        * @param {!CBOR.Decoder} d
+        * @returns {Header}
+        */
+       static decode(d: CBOR.Decoder): Header;
+
+   }
+
+   /**
+    * @extends Message
+    * @throws {DontCallConstructor}
+    */
+   class HeaderMessage extends Message {
+       /**
+        * @extends Message
+        * @throws {DontCallConstructor}
+        */
+       constructor();
+
+       /**
+        * @param {!Uint8Array} header - encrypted header
+        * @param {!Uint8Array} cipher_text
+        * @returns {HeaderMessage} - `this`
+        */
+       static new(header: Uint8Array, cipher_text: Uint8Array): HeaderMessage;
+
+       /**
+        * @param {!CBOR.Encoder} e
+        * @returns {CBOR.Encoder}
+        */
+       encode(e: CBOR.Encoder): CBOR.Encoder;
+
+       /**
+        * @param {!CBOR.Decoder} d
+        * @returns {HeaderMessage}
+        */
+       static decode(d: CBOR.Decoder): HeaderMessage;
+
+   }
+
+   /**
     * @class Message
     * @throws {DontCallConstructor}
     */
@@ -905,6 +1084,40 @@ export module message {
         * @returns {PreKeyMessage}
         */
        static decode(d: CBOR.Decoder): PreKeyMessage;
+
+   }
+
+   /**
+    * @extends Message
+    * @throws {DontCallConstructor}
+    */
+   class PreKeyMessageHd extends Message {
+       /**
+        * @extends Message
+        * @throws {DontCallConstructor}
+        */
+       constructor();
+
+       /**
+        * @param {!number} prekey_id
+        * @param {!keys.PublicKey} base_key
+        * @param {!keys.IdentityKey} identity_key
+        * @param {!message.HeaderMessage} message
+        * @returns {PreKeyMessageHd}
+        */
+       static new(prekey_id: number, base_key: keys.PublicKey, identity_key: keys.IdentityKey, message: message.HeaderMessage): PreKeyMessageHd;
+
+       /**
+        * @param {!CBOR.Encoder} e
+        * @returns {CBOR.Encoder}
+        */
+       encode(e: CBOR.Encoder): CBOR.Encoder;
+
+       /**
+        * @param {!CBOR.Decoder} d
+        * @returns {PreKeyMessageHd}
+        */
+       static decode(d: CBOR.Decoder): PreKeyMessageHd;
 
    }
 
@@ -1070,9 +1283,9 @@ export module session {
        /**
         * @param {!session.ChainKey} chain_key
         * @param {!keys.PublicKey} public_key
-        * @returns {message.PreKeyMessage}
+        * @returns {RecvChain}
         */
-       static new(chain_key: session.ChainKey, public_key: keys.PublicKey): message.PreKeyMessage;
+       static new(chain_key: session.ChainKey, public_key: keys.PublicKey): RecvChain;
 
        /**
         * @param {!message.Envelope} envelope
@@ -1111,6 +1324,85 @@ export module session {
    }
 
    /**
+    * @class RecvChainHd
+    * @throws {DontCallConstructor}
+    */
+   class RecvChainHd {
+       /**
+        * @class RecvChainHd
+        * @throws {DontCallConstructor}
+        */
+       constructor();
+
+       /**
+        * @param {!session.ChainKey} chain_key
+        * @param {!keys.PublicKey} public_key
+        * @param {!derived.HeadKey} head_key
+        * @returns {session.RecvChainHd}
+        */
+       static new(chain_key: session.ChainKey, public_key: keys.PublicKey, head_key: derived.HeadKey): session.RecvChainHd;
+
+       /**
+        * @param {!number} start_index
+        * @param {!number} end_index
+        * @param {!Uint8Array} encrypted_header - encrypted header
+        * @param {!derived.HeadKey} head_key
+        * @returns {message.Header}
+        * @private
+        */
+       private static _try_head_key(start_index: number, end_index: number, encrypted_header: Uint8Array, head_key: derived.HeadKey): message.Header;
+
+       /**
+        * @param {!Uint8Array} encrypted_header - encrypted header
+        * @param {!derived.HeadKey} next_head_key
+        * @returns {message.Header}
+        */
+       static try_next_head_key(encrypted_header: Uint8Array, next_head_key: derived.HeadKey): message.Header;
+
+       /**
+        * @param {!Uint8Array} encrypted_header - encrypted header
+        * @returns {message.Header}
+        */
+       try_head_key(encrypted_header: Uint8Array): message.Header;
+
+       /**
+        * @param {!message.Envelope} envelope
+        * @param {!message.Header} header
+        * @param {!Uint8Array} cipher_text
+        * @returns {Uint8Array}
+        */
+       try_message_keys(envelope: message.Envelope, header: message.Header, cipher_text: Uint8Array): Uint8Array;
+
+       /**
+        * @param {!message.Header} header
+        * @returns {Array<session.ChainKey>|session.MessageKeys}
+        */
+       stage_message_keys(header: message.Header): (session.ChainKey[]|session.MessageKeys);
+
+       /**
+        * @param {!Array<session.MessageKeys>} keys
+        * @returns {void}
+        */
+       commit_message_keys(keys: session.MessageKeys[]): void;
+
+       /**
+        * @param {!CBOR.Encoder} e
+        * @returns {Array<CBOR.Encoder>}
+        */
+       encode(e: CBOR.Encoder): CBOR.Encoder[];
+
+       /**
+        * @param {!CBOR.Decoder} d
+        * @returns {RecvChainHd}
+        */
+       static decode(d: CBOR.Decoder): RecvChainHd;
+
+       /** @type {number} */
+       static MAX_COUNTER_GAP: number;
+
+   }
+
+   /**
     * @class RootKey
     * @throws {DontCallConstructor}
     */
@@ -1133,6 +1425,13 @@ export module session {
         * @returns {Array<RootKey|session.ChainKey>}
         */
        dh_ratchet(ours: keys.KeyPair, theirs: keys.PublicKey): (RootKey|session.ChainKey)[];
+
+       /**
+        * @param {!keys.KeyPair} ours - Our key pair
+        * @param {!keys.PublicKey} theirs - Their public key
+        * @returns {Array<RootKey|session.ChainKey|derived.HeadKey>}
+        */
+       dh_ratchet_hd(ours: keys.KeyPair, theirs: keys.PublicKey): (RootKey|session.ChainKey|derived.HeadKey)[];
 
        /**
         * @param {!CBOR.Encoder} e
@@ -1160,6 +1459,13 @@ export module session {
        constructor();
 
        /**
+        * @param {!session.ChainKey} chain_key
+        * @param {!keys.KeyPair} keypair
+        * @returns {session.SendChain}
+        */
+       static new(chain_key: session.ChainKey, keypair: keys.KeyPair): session.SendChain;
+
+       /**
         * @param {!CBOR.Encoder} e
         * @returns {CBOR.Encoder}
         */
@@ -1170,6 +1476,43 @@ export module session {
         * @returns {SendChain}
         */
        static decode(d: CBOR.Decoder): SendChain;
+
+   }
+
+   /**
+    * @class SendChainHd
+    * @throws {DontCallConstructor}
+    *
+    * extends `SendChain` for `SessionState`'s encode/decode compatibility
+    */
+   class SendChainHd {
+       /**
+        * @class SendChainHd
+        * @throws {DontCallConstructor}
+        *
+        * extends `SendChain` for `SessionState`'s encode/decode compatibility
+        */
+       constructor();
+
+       /**
+        * @param {!session.ChainKey} chain_key
+        * @param {!keys.KeyPair} keypair
+        * @param {!derived.HeadKey} head_key
+        * @returns {session.SendChainHd}
+        */
+       static new(chain_key: session.ChainKey, keypair: keys.KeyPair, head_key: derived.HeadKey): session.SendChainHd;
+
+       /**
+        * @param {!CBOR.Encoder} e
+        * @returns {CBOR.Encoder}
+        */
+       encode(e: CBOR.Encoder): CBOR.Encoder;
+
+       /**
+        * @param {!CBOR.Decoder} d
+        * @returns {SendChainHd}
+        */
+       static decode(d: CBOR.Decoder): SendChainHd;
 
    }
 
@@ -1201,11 +1544,11 @@ export module session {
         * @param {!keys.IdentityKeyPair} our_identity
         * @param {!session.PreKeyStore} prekey_store
         * @param {!message.Envelope} envelope
-        * @returns {Promise<Array<Session|string>>}
+        * @returns {Promise<Array<Session|Uint8Array>>}
         * @throws {errors.DecryptError.InvalidMessage}
         * @throws {errors.DecryptError.PrekeyNotFound}
         */
-       static init_from_message(our_identity: keys.IdentityKeyPair, prekey_store: session.PreKeyStore, envelope: message.Envelope): Promise<(Session|string)[]>;
+       static init_from_message(our_identity: keys.IdentityKeyPair, prekey_store: session.PreKeyStore, envelope: message.Envelope): Promise<(Session|Uint8Array)[]>;
 
        /**
         * @param {!session.PreKeyStore} pre_key_store
@@ -1234,36 +1577,36 @@ export module session {
        get_local_identity(): keys.PublicKey;
 
        /**
-        * @param {!(String|Uint8Array)} plaintext - The plaintext which needs to be encrypted
+        * @param {!(string|Uint8Array)} plaintext - The plaintext which needs to be encrypted
         * @return {Promise<message.Envelope>} Encrypted message
         */
-       encrypt(plaintext: (String|Uint8Array)): Promise<message.Envelope>;
+       encrypt(plaintext: (string|Uint8Array)): Promise<message.Envelope>;
 
        /**
         * @param {!session.PreKeyStore} prekey_store
         * @param {!message.Envelope} envelope
-        * @returns {Promise<string>}
+        * @returns {Promise<Uint8Array>}
         * @throws {errors.DecryptError}
         */
-       decrypt(prekey_store: session.PreKeyStore, envelope: message.Envelope): Promise<string>;
+       decrypt(prekey_store: session.PreKeyStore, envelope: message.Envelope): Promise<Uint8Array>;
 
        /**
         * @param {!message.Envelope} envelope
         * @param {!message.Message} msg
         * @param {!session.PreKeyStore} prekey_store
         * @private
-        * @returns {Promise<string>}
+        * @returns {Promise<Uint8Array>}
         * @throws {errors.DecryptError}
         */
-       private _decrypt_prekey_message(envelope: message.Envelope, msg: message.Message, prekey_store: session.PreKeyStore): Promise<string>;
+       private _decrypt_prekey_message(envelope: message.Envelope, msg: message.Message, prekey_store: session.PreKeyStore): Promise<Uint8Array>;
 
        /**
         * @param {!message.Envelope} envelope
         * @param {!message.Message} msg
         * @private
-        * @returns {string}
+        * @returns {Uint8Array}
         */
-       private _decrypt_cipher_message(envelope: message.Envelope, msg: message.Message): string;
+       private _decrypt_cipher_message(envelope: message.Envelope, msg: message.Message): Uint8Array;
 
        /**
         * @returns {ArrayBuffer}
@@ -1289,6 +1632,128 @@ export module session {
         * @returns {Session}
         */
        static decode(local_identity: keys.IdentityKeyPair, d: CBOR.Decoder): Session;
+
+   }
+
+   /**
+    * @class SessionHd
+    * @throws {DontCallConstructor}
+    */
+   class SessionHd {
+       /**
+        * @class SessionHd
+        * @throws {DontCallConstructor}
+        */
+       constructor();
+
+       /** @type {number} */
+       static MAX_RECV_CHAINS: number;
+
+       /** @type {number} */
+       static MAX_SESSION_STATES: number;
+
+       /**
+        * @param {!keys.IdentityKeyPair} local_identity - Alice's Identity Key Pair
+        * @param {!keys.PreKeyBundle} remote_pkbundle - Bob's Pre-Key Bundle
+        * @returns {Promise<SessionHd>}
+        */
+       static init_from_prekey(local_identity: keys.IdentityKeyPair, remote_pkbundle: keys.PreKeyBundle): Promise<SessionHd>;
+
+       /**
+        * @param {!keys.IdentityKeyPair} our_identity
+        * @param {!session.PreKeyStore} prekey_store
+        * @param {!message.Envelope} envelope
+        * @returns {Promise<Array<SessionHd|Uint8Array>>}
+        * @throws {errors.DecryptError.InvalidMessage}
+        * @throws {errors.DecryptError.PrekeyNotFound}
+        */
+       static init_from_message(our_identity: keys.IdentityKeyPair, prekey_store: session.PreKeyStore, envelope: message.Envelope): Promise<(SessionHd|Uint8Array)[]>;
+
+       /**
+        * @param {!session.PreKeyStore} pre_key_store
+        * @param {!message.PreKeyMessageHd} pre_key_message
+        * @returns {Promise<session.SessionStateHd>}
+        * @private
+        * @throws {errors.ProteusError}
+        */
+       private _new_state(pre_key_store: session.PreKeyStore, pre_key_message: message.PreKeyMessageHd): Promise<session.SessionStateHd>;
+
+       /**
+        * @param {!session.SessionStateHd} state
+        * @returns {boolean}
+        * @private
+        */
+       private _insert_session_state(state: session.SessionStateHd): boolean;
+
+       /** @returns {keys.PublicKey} */
+       get_local_identity(): keys.PublicKey;
+
+       /**
+        * @param {!(string|Uint8Array)} plaintext - The plaintext which needs to be encrypted
+        * @return {Promise<message.Envelope>} Encrypted message
+        */
+       encrypt(plaintext: (string|Uint8Array)): Promise<message.Envelope>;
+
+       /**
+        * @param {!session.PreKeyStore} prekey_store
+        * @param {!message.Envelope} envelope
+        * @returns {Promise<Uint8Array>}
+        * @throws {errors.DecryptError}
+        */
+       decrypt(prekey_store: session.PreKeyStore, envelope: message.Envelope): Promise<Uint8Array>;
+
+       /**
+        * @param {!message.Envelope} envelope
+        * @param {!message.Message} msg
+        * @param {!session.PreKeyStore} prekey_store
+        * @private
+        * @returns {Promise<Uint8Array>}
+        * @throws {errors.DecryptError}
+        */
+       private _decrypt_prekey_message(envelope: message.Envelope, msg: message.Message, prekey_store: session.PreKeyStore): Promise<Uint8Array>;
+
+       /**
+        * @param {!message.Envelope} envelope
+        * @param {!message.Message} message
+        * @param {!number} start
+        * @private
+        * @returns {Promise<Uint8Array>}
+        */
+       private _try_decrypt_header_message(envelope: message.Envelope, message: message.Message, start: number): Promise<Uint8Array>;
+
+       /**
+        * @param {!message.Envelope} envelope
+        * @param {!message.Message} msg
+        * @param {number} state_index
+        * @private
+        * @returns {Uint8Array}
+        */
+       private _decrypt_header_message(envelope: message.Envelope, msg: message.Message, state_index: number): Uint8Array;
+
+       /**
+        * @returns {ArrayBuffer}
+        */
+       serialise(): ArrayBuffer;
+
+       /**
+        * @param {!keys.IdentityKeyPair} local_identity
+        * @param {!ArrayBuffer} buf
+        * @returns {SessionHd}
+        */
+       static deserialise(local_identity: keys.IdentityKeyPair, buf: ArrayBuffer): SessionHd;
+
+       /**
+        * @param {!CBOR.Encoder} e
+        * @returns {void}
+        */
+       encode(e: CBOR.Encoder): void;
+
+       /**
+        * @param {!keys.IdentityKeyPair} local_identity
+        * @param {!CBOR.Decoder} d
+        * @returns {SessionHd}
+        */
+       static decode(local_identity: keys.IdentityKeyPair, d: CBOR.Decoder): SessionHd;
 
    }
 
@@ -1322,12 +1787,12 @@ export module session {
 
        /**
         * @param {!keys.IdentityKey} identity_key - Public identity key of the local identity key pair
-        * @param {!Array<number>} pending - Pending pre-key
+        * @param {!Array<number|keys.PublicKey>} pending - Pending pre-key
         * @param {!message.SessionTag} tag - Session tag
         * @param {!(string|Uint8Array)} plaintext - The plaintext to encrypt
         * @returns {message.Envelope}
         */
-       encrypt(identity_key: keys.IdentityKey, pending: number[], tag: message.SessionTag, plaintext: (string|Uint8Array)): message.Envelope;
+       encrypt(identity_key: keys.IdentityKey, pending: (number|keys.PublicKey)[], tag: message.SessionTag, plaintext: (string|Uint8Array)): message.Envelope;
 
        /**
         * @param {!message.Envelope} envelope
@@ -1350,6 +1815,67 @@ export module session {
         * @returns {SessionState}
         */
        static decode(d: CBOR.Decoder): SessionState;
+
+   }
+
+   /** @class SessionStateHd */
+   class SessionStateHd {
+       /** @class SessionStateHd */
+       constructor();
+
+       /**
+        * @param {!keys.IdentityKeyPair} alice_identity_pair
+        * @param {!keys.PublicKey} alice_base
+        * @param {!keys.PreKeyBundle} bob_pkbundle
+        * @returns {SessionStateHd}
+        */
+       static init_as_alice(alice_identity_pair: keys.IdentityKeyPair, alice_base: keys.PublicKey, bob_pkbundle: keys.PreKeyBundle): SessionStateHd;
+
+       /**
+        * @param {!keys.IdentityKeyPair} bob_ident
+        * @param {!keys.KeyPair} bob_prekey
+        * @param {!keys.IdentityKey} alice_ident
+        * @param {!keys.PublicKey} alice_base
+        * @returns {SessionStateHd}
+        */
+       static init_as_bob(bob_ident: keys.IdentityKeyPair, bob_prekey: keys.KeyPair, alice_ident: keys.IdentityKey, alice_base: keys.PublicKey): SessionStateHd;
+
+       /**
+        * @param {!keys.KeyPair} ratchet_key
+        * @param {!number} prev_counter
+        * @returns {void}
+        */
+       ratchet(ratchet_key: keys.KeyPair, prev_counter: number): void;
+
+       /**
+        * @param {!keys.IdentityKey} identity_key - Public identity key of the local identity key pair
+        * @param {!Array<number|keys.PublicKey>} pending - Pending pre-key
+        * @param {!(string|Uint8Array)} plaintext - The plaintext to encrypt
+        * @returns {message.Envelope}
+        */
+       encrypt(identity_key: keys.IdentityKey, pending: (number|keys.PublicKey)[], plaintext: (string|Uint8Array)): message.Envelope;
+
+       /**
+        * @param {!message.Envelope} envelope
+        * @param {!message.HeaderMessage} msg
+        * @returns {Uint8Array}
+        */
+       decrypt(envelope: message.Envelope, msg: message.HeaderMessage): Uint8Array;
+
+       /** @returns {ArrayBuffer} */
+       serialise(): ArrayBuffer;
+
+       /**
+        * @param {!CBOR.Encoder} e
+        * @returns {CBOR.Encoder}
+        */
+       encode(e: CBOR.Encoder): CBOR.Encoder;
+
+       /**
+        * @param {!CBOR.Decoder} d
+        * @returns {SessionStateHd}
+        */
+       static decode(d: CBOR.Decoder): SessionStateHd;
 
    }
 

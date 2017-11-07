@@ -20,38 +20,65 @@
 'use strict';
 
 const CBOR = require('wire-webapp-cbor');
+const sodium = require('libsodium-wrappers-sumo');
 
 const ClassUtil = require('../util/ClassUtil');
 const DontCallConstructor = require('../errors/DontCallConstructor');
 const TypeUtil = require('../util/TypeUtil');
 
-const ChainKey = require('./ChainKey');
-const KeyPair = require('../keys/KeyPair');
-
-/** @module session */
+/** @module derived */
 
 /**
- * @class SendChain
+ * @class HeadKey
  * @throws {DontCallConstructor}
  */
-class SendChain {
+class HeadKey {
   constructor() {
     throw new DontCallConstructor(this);
   }
 
   /**
-   * @param {!session.ChainKey} chain_key
-   * @param {!keys.KeyPair} keypair
-   * @returns {session.SendChain}
+   * @param {!Uint8Array} key
+   * @returns {HeadKey} - `this`
    */
-  static new(chain_key, keypair) {
-    TypeUtil.assert_is_instance(ChainKey, chain_key);
-    TypeUtil.assert_is_instance(KeyPair, keypair);
+  static new(key) {
+    TypeUtil.assert_is_instance(Uint8Array, key);
 
-    const sc = ClassUtil.new_instance(SendChain);
-    sc.chain_key = chain_key;
-    sc.ratchet_key = keypair;
-    return sc;
+    const hk = ClassUtil.new_instance(HeadKey);
+    /** @type {Uint8Array} */
+    hk.key = key;
+    return hk;
+  }
+
+  /**
+   * @param {!number} idx
+   * @returns {Uint8Array}
+   * @private
+   */
+  static index_as_nonce(idx) {
+    const nonce = new ArrayBuffer(8);
+    new DataView(nonce).setUint32(0, idx);
+    return new Uint8Array(nonce);
+  }
+
+  /**
+   * @param {!ArrayBuffer} header - The serialized header to encrypt
+   * @param {!Uint8Array} nonce
+   * @returns {Uint8Array} - Encrypted payload
+   */
+  encrypt(header, nonce) {
+    header = new Uint8Array(header);
+
+    return sodium.crypto_stream_chacha20_xor(header, nonce, this.key, 'uint8array');
+  }
+
+  /**
+   * @param {!Uint8Array} ciphertext
+   * @param {!Uint8Array} nonce
+   * @returns {Uint8Array}
+   */
+  decrypt(ciphertext, nonce) {
+    return this.encrypt(ciphertext, nonce);
   }
 
   /**
@@ -59,37 +86,32 @@ class SendChain {
    * @returns {CBOR.Encoder}
    */
   encode(e) {
-    e.object(2);
+    e.object(1);
     e.u8(0);
-    this.chain_key.encode(e);
-    e.u8(1);
-    return this.ratchet_key.encode(e);
+    return e.bytes(this.key);
   }
 
   /**
-   * @param {!CBOR.Decoder} d
-   * @returns {SendChain}
+   * @param {!CBOR.Encoder} d
+   * @returns {HeadKey}
    */
   static decode(d) {
     TypeUtil.assert_is_instance(CBOR.Decoder, d);
-    const self = ClassUtil.new_instance(SendChain);
+
+    let key_bytes = null;
+
     const nprops = d.object();
     for (let i = 0; i <= nprops - 1; i++) {
       switch (d.u8()) {
         case 0:
-          self.chain_key = ChainKey.decode(d);
-          break;
-        case 1:
-          self.ratchet_key = KeyPair.decode(d);
+          key_bytes = new Uint8Array(d.bytes());
           break;
         default:
           d.skip();
       }
     }
-    TypeUtil.assert_is_instance(ChainKey, self.chain_key);
-    TypeUtil.assert_is_instance(KeyPair, self.ratchet_key);
-    return self;
+    return HeadKey.new(key_bytes);
   }
 }
 
-module.exports = SendChain;
+module.exports = HeadKey;

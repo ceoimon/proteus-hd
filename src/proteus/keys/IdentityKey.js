@@ -42,7 +42,7 @@ class IdentityKey {
   }
 
   /**
-   * @param {!IdentityKey} public_key
+   * @param {!PublicKey} public_key
    * @returns {IdentityKey} - `this`
    */
   static new(public_key) {

@@ -185,7 +185,7 @@ export declare module message {
 
     static decode(d: CBOR.Decoder): message.CipherMessage;
     encode(e: CBOR.Encoder): CBOR.Encoder;
-    static new(session_tag: message.SessionTag, counter: number, prev_counter: number, ratchet_key: keys.PublicKey, cipher_text: Uint8Array): message.SessionTag;
+    static new(session_tag: message.SessionTag, counter: number, prev_counter: number, ratchet_key: keys.PublicKey, cipher_text: Uint8Array): message.CipherMessage;
   }
 
   class Envelope {

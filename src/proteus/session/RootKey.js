@@ -73,6 +73,25 @@ class RootKey {
   }
 
   /**
+   * @param {!keys.KeyPair} ours - Our key pair
+   * @param {!keys.PublicKey} theirs - Their public key
+   * @returns {Array<RootKey|session.ChainKey|derived.HeadKey>}
+   */
+  dh_ratchet_hd(ours, theirs) {
+    TypeUtil.assert_is_instance(KeyPair, ours);
+    TypeUtil.assert_is_instance(PublicKey, theirs);
+
+    const secret = ours.secret_key.shared_secret(theirs);
+    const derived_secrets = DerivedSecrets.kdf_hd(secret, this.key.key, 'dh_ratchet_hd');
+
+    return [
+      RootKey.from_cipher_key(derived_secrets.cipher_key),
+      ChainKey.from_mac_key(derived_secrets.mac_key, 0),
+      derived_secrets.next_head_key,
+    ];
+  }
+
+  /**
    * @param {!CBOR.Encoder} e
    * @returns {CBOR.Encoder}
    */

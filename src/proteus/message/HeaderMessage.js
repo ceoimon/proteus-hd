@@ -25,33 +25,36 @@ const ClassUtil = require('../util/ClassUtil');
 const DontCallConstructor = require('../errors/DontCallConstructor');
 const TypeUtil = require('../util/TypeUtil');
 
-const ChainKey = require('./ChainKey');
-const KeyPair = require('../keys/KeyPair');
+const Message = require('./Message');
 
-/** @module session */
+/** @module message */
 
 /**
- * @class SendChain
+ * @extends Message
  * @throws {DontCallConstructor}
  */
-class SendChain {
+class HeaderMessage extends Message {
   constructor() {
+    super();
     throw new DontCallConstructor(this);
   }
 
   /**
-   * @param {!session.ChainKey} chain_key
-   * @param {!keys.KeyPair} keypair
-   * @returns {session.SendChain}
+   * @param {!Uint8Array} header - encrypted header
+   * @param {!Uint8Array} cipher_text
+   * @returns {HeaderMessage} - `this`
    */
-  static new(chain_key, keypair) {
-    TypeUtil.assert_is_instance(ChainKey, chain_key);
-    TypeUtil.assert_is_instance(KeyPair, keypair);
+  static new(header, cipher_text) {
+    TypeUtil.assert_is_instance(Uint8Array, header);
+    TypeUtil.assert_is_instance(Uint8Array, cipher_text);
 
-    const sc = ClassUtil.new_instance(SendChain);
-    sc.chain_key = chain_key;
-    sc.ratchet_key = keypair;
-    return sc;
+    const hm = ClassUtil.new_instance(HeaderMessage);
+
+    hm.header = header;
+    hm.cipher_text = cipher_text;
+
+    Object.freeze(hm);
+    return hm;
   }
 
   /**
@@ -60,36 +63,54 @@ class SendChain {
    */
   encode(e) {
     e.object(2);
+
     e.u8(0);
-    this.chain_key.encode(e);
+    e.object(1);
+    e.u8(0);
+    e.bytes(this.header);
+
     e.u8(1);
-    return this.ratchet_key.encode(e);
+    return e.bytes(this.cipher_text);
   }
 
   /**
    * @param {!CBOR.Decoder} d
-   * @returns {SendChain}
+   * @returns {HeaderMessage}
    */
   static decode(d) {
     TypeUtil.assert_is_instance(CBOR.Decoder, d);
-    const self = ClassUtil.new_instance(SendChain);
+
+    let header = null;
+    let cipher_text = null;
+
     const nprops = d.object();
     for (let i = 0; i <= nprops - 1; i++) {
       switch (d.u8()) {
-        case 0:
-          self.chain_key = ChainKey.decode(d);
+        case 0: {
+          const nprops_mac = d.object();
+          for (let j = 0; j <= nprops_mac - 1; j++) {
+            switch (d.u8()) {
+              case 0:
+                header = new Uint8Array(d.bytes());
+                break;
+              default:
+                d.skip();
+            }
+          }
           break;
-        case 1:
-          self.ratchet_key = KeyPair.decode(d);
+        }
+        case 1: {
+          cipher_text = new Uint8Array(d.bytes());
           break;
-        default:
+        }
+        default: {
           d.skip();
+        }
       }
     }
-    TypeUtil.assert_is_instance(ChainKey, self.chain_key);
-    TypeUtil.assert_is_instance(KeyPair, self.ratchet_key);
-    return self;
+
+    return HeaderMessage.new(header, cipher_text);
   }
 }
 
-module.exports = SendChain;
+module.exports = HeaderMessage;
