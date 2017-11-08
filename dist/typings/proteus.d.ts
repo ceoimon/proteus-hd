@@ -373,7 +373,7 @@ export declare module session {
     decrypt(prekey_store: session.PreKeyStore, envelope: message.Envelope): Promise<Uint8Array>;
     static deserialise(local_identity: keys.IdentityKeyPair, buf: ArrayBuffer): session.Session;
     encode(e: CBOR.Encoder): CBOR.Encoder;
-    encrypt(plaintext: string|Uint8Array): Promise<message.Envelope>;
+    encrypt(plaintext: string|Uint8Array, confuse_pre_key_id?: number): Promise<message.Envelope>;
     get_local_identity(): keys.PublicKey;
     static init_from_message(our_identity: keys.IdentityKeyPair, prekey_store: session.PreKeyStore, envelope: message.Envelope): Promise<SessionFromMessageTuple>;
     static init_from_prekey(local_identity: keys.IdentityKeyPair, remote_pkbundle: keys.PreKeyBundle): Promise<session.Session>;
@@ -394,7 +394,7 @@ export declare module session {
     decrypt(envelope: message.Envelope, msg: message.HeaderMessage): Uint8Array;
     static deserialise(buf: ArrayBuffer): session.SessionState;
     encode(e: CBOR.Encoder): CBOR.Encoder;
-    encrypt(identity_key: keys.IdentityKey, pending: PendingTuple, plaintext: string|Uint8Array): message.Envelope;
+    encrypt(identity_key: keys.IdentityKey, pending: PendingTuple, plaintext: string|Uint8Array, confuse_pre_key_id?: number): message.Envelope;
     static init_as_alice(alice_identity_pair: keys.IdentityKeyPair, alice_base: keys.KeyPair, bob_pkbundle: keys.PreKeyBundle): session.SessionState;
     static init_as_bob(bob_ident: keys.IdentityKeyPair, bob_prekey: keys.KeyPair, alice_ident: keys.IdentityKey, alice_base: keys.PublicKey): session.SessionState;
     ratchet(ratchet_key: keys.KeyPair, prev_counter: number): void;

@@ -1358,9 +1358,10 @@ export module session {
 
        /**
         * @param {!(string|Uint8Array)} plaintext - The plaintext which needs to be encrypted
+        * @param {number} confuse_pre_key_id - Use to create confused pre-key message
         * @return {Promise<message.Envelope>} Encrypted message
         */
-       encrypt(plaintext: (string|Uint8Array)): Promise<message.Envelope>;
+       encrypt(plaintext: (string|Uint8Array), confuse_pre_key_id: number): Promise<message.Envelope>;
 
        /**
         * @param {!session.PreKeyStore} prekey_store
@@ -1458,9 +1459,10 @@ export module session {
         * @param {!keys.IdentityKey} identity_key - Public identity key of the local identity key pair
         * @param {!Array<number|keys.PublicKey>} pending - Pending pre-key
         * @param {!(string|Uint8Array)} plaintext - The plaintext to encrypt
+        * @param {number} confuse_pre_key_id - Use to create confused pre-key message
         * @returns {message.Envelope}
         */
-       encrypt(identity_key: keys.IdentityKey, pending: (number|keys.PublicKey)[], plaintext: (string|Uint8Array)): message.Envelope;
+       encrypt(identity_key: keys.IdentityKey, pending: (number|keys.PublicKey)[], plaintext: (string|Uint8Array), confuse_pre_key_id: number): message.Envelope;
 
        /**
         * @param {!message.Envelope} envelope

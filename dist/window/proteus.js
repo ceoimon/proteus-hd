@@ -3522,9 +3522,10 @@ class Session {
 
   /**
    * @param {!(string|Uint8Array)} plaintext - The plaintext which needs to be encrypted
+   * @param {number} confuse_pre_key_id - Use to create confused pre-key message
    * @return {Promise<message.Envelope>} Encrypted message
    */
-  encrypt(plaintext) {
+  encrypt(plaintext, confuse_pre_key_id) {
     return new Promise((resolve, reject) => {
       const state = this.session_states[0];
 
@@ -3537,7 +3538,8 @@ class Session {
       return resolve(state.encrypt(
         this.local_identity.public_key,
         this.pending_prekey,
-        plaintext
+        plaintext,
+        confuse_pre_key_id
       ));
     });
   }
@@ -7208,11 +7210,12 @@ class SessionState {
 
   /**
    * @param {!keys.IdentityKey} identity_key - Public identity key of the local identity key pair
-   * @param {Array<number|keys.PublicKey>} pending - Pending pre-key
+   * @param {!Array<number|keys.PublicKey>} pending - Pending pre-key
    * @param {!(string|Uint8Array)} plaintext - The plaintext to encrypt
+   * @param {number} confuse_pre_key_id - Use to create confused pre-key message
    * @returns {message.Envelope}
    */
-  encrypt(identity_key, pending, plaintext) {
+  encrypt(identity_key, pending, plaintext, confuse_pre_key_id) {
     if (pending) {
       TypeUtil.assert_is_integer(pending[0]);
       TypeUtil.assert_is_instance(PublicKey, pending[1]);
@@ -7236,6 +7239,11 @@ class SessionState {
 
     if (pending) {
       message = PreKeyMessage.new(pending[0], pending[1], identity_key, message);
+    }
+
+    // create a confused pre-key message
+    if (confuse_pre_key_id !== undefined) {
+      message = PreKeyMessage.new(confuse_pre_key_id, KeyPair.new().public_key, identity_key, message);
     }
 
     const env = Envelope.new(msgkeys.mac_key, message);

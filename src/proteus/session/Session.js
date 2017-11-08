@@ -191,9 +191,10 @@ class Session {
 
   /**
    * @param {!(string|Uint8Array)} plaintext - The plaintext which needs to be encrypted
+   * @param {number} confuse_pre_key_id - Use to create confused pre-key message
    * @return {Promise<message.Envelope>} Encrypted message
    */
-  encrypt(plaintext) {
+  encrypt(plaintext, confuse_pre_key_id) {
     return new Promise((resolve, reject) => {
       const state = this.session_states[0];
 
@@ -206,7 +207,8 @@ class Session {
       return resolve(state.encrypt(
         this.local_identity.public_key,
         this.pending_prekey,
-        plaintext
+        plaintext,
+        confuse_pre_key_id
       ));
     });
   }
