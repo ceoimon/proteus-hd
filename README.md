@@ -19,7 +19,7 @@ yarn add proteus-hd
 
 ### Browser
 
-Use a module bundler or [UMD](https://github.com/umdjs/umd) builds in the [`dist` folder](https://unpkg.com/proteus/dist/)
+Use a module bundler or [UMD](https://github.com/umdjs/umd) builds in the [`dist` folder](https://unpkg.com/proteus-hd/dist/)
 
 ## Usage
 
