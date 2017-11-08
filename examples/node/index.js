@@ -1,7 +1,6 @@
 'use strict';
 
-// const Proteus = require('proteus-hd');
-const Proteus = require('../src/proteus');
+const Proteus = require('proteus-hd');
 const sodium = require('libsodium-wrappers-sumo');
 
 const identity = Proteus.keys.IdentityKeyPair.new();

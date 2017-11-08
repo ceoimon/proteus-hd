@@ -1,2 +1,1 @@
-!/dist/typings
-!/dist/window
+/dist/types.d.ts

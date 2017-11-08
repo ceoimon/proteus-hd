@@ -17,15 +17,19 @@ While [Proteus.js](https://github.com/wireapp/proteus.js) is an implementation o
 yarn add proteus-hd
 ```
 
+### Browser
+
+Use a module bundler or [UMD](https://github.com/umdjs/umd) builds in the [`dist` folder](https://unpkg.com/proteus/dist/)
+
 ## Usage
 
 ### Browser
 
-- [index.html](./dist/index.html)
+- [index.html](./examples/browser.html)
 
 ### Node.js
 
-- [index.js](./dist/index.js)
+- [index.js](./examples/node/index.js)
 
 ### TypeScript
 
