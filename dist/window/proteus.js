@@ -1,4 +1,4 @@
-/*! proteus-hd v1.0.0 */
+/*! proteus-hd v1.0.1 */
 var Proteus =
 /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
