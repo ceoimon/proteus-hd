@@ -1,29 +1,20 @@
-# Wire
+# Proteus-HD
 
-[![Greenkeeper badge](https://badges.greenkeeper.io/wireapp/proteus.js.svg)](https://greenkeeper.io/)
+*NOTE: Using header encryption will make message decryption process much slower! You may want to use [Proteus.js](https://github.com/wireapp/proteus.js) in most case.*
 
-This repository is part of the source code of Wire. You can find more information at [wire.com](https://wire.com) or by contacting opensource@wire.com.
+While [Proteus.js](https://github.com/wireapp/proteus.js) is an implementation of the [Signal Protocol](https://signal.org/docs/) without header encryption, Proteus-HD take advantage of the [header encryption variant of Double Ratchet Algorithm](https://signal.org/docs/specifications/doubleratchet/#double-ratchet-with-header-encryption) to make communication more secure.
 
-You can find the published source code at [github.com/wireapp](https://github.com/wireapp).
-
-For licensing information, see the attached LICENSE file and the list of third-party licenses at [wire.com/legal/licenses/](https://wire.com/legal/licenses/).
 
 ## Build Status
 
-[![Build Status](https://travis-ci.org/wireapp/proteus.js.svg?branch=master)](https://travis-ci.org/wireapp/proteus.js)
+[![Build Status](https://travis-ci.org/ceoimon/proteus-hd.svg?branch=header_encryption_only)](https://travis-ci.org/ceoimon/proteus-hd)
 
 ## Installation
-
-### Browser
-
-```bash
-bower install wire-webapp-proteus
-```
 
 ### Node.js
 
 ```bash
-yarn add wire-webapp-proteus
+yarn add proteus-hd
 ```
 
 ## Usage
@@ -39,6 +30,6 @@ yarn add wire-webapp-proteus
 ### TypeScript
 
 ```typescript
-import * as Proteus from 'wire-webapp-proteus';
+import * as Proteus from 'proteus-hd';
 const identity: Proteus.keys.IdentityKeyPair = Proteus.keys.IdentityKeyPair.new();
 ```

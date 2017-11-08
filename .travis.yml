@@ -25,19 +25,3 @@ addons:
       - ubuntu-toolchain-r-test
     packages:
       - g++-4.8
-
-# http://docs.travis-ci.com/user/build-lifecycle/
-before_install:
-  - curl https://sh.rustup.rs -sSf | sh -s -- -y
-  - source "$HOME/.cargo/env"
-
-# https://docs.travis-ci.com/user/deployment/npm/
-deploy:
-  provider: npm
-  skip_cleanup: true
-  email:
-    secure: PeM24JZ7Pm8sTS3N7MSK25LZ6RaY8pbwxTHx69XNsQy4vegoolehGdHwmM32Df15ElQL8g6c7pf3DEM46j9SpMurlxSn97+rO7tkru2U9sAukZSoBuQyAyOnAKotSX8gwfsiNb0Fjf7Uwe82TKvkngv83coXmc0Iz8unCp+eJ/tjDRw06n4fpdVpo/OYZScSsJcukOlBhwbT3dAzZvS7ESQJ9bYIHNoJ8GWhGyE9UZKPx5ciPoxhn55A/WR36U51xURPw6F0ph8UykuAmHxo2ilVElbW1jFGnKcb5RD3FlsM8LZEaBLfCHyQV/X6sHGUnFeqshLAFs4lXylNenDec3IxM1NAawLV0SMEkC6WyAnwtAr5gfo0Lc2SGyubnoZjCQA9HDa4FO0EKbGAiYPCIJ3Z3x6kpXN7n/aQ6osxICzbBL9QkYPDWiwxR5yqsUYJui0xM21zXBRn0k8Kdtg6JuLz7mCOojNM6HiTG83UXVUDc8LWD1CvdN2UR0HScqHdpQLAQnskogCOl4f1EXSJJPPJzZAwxmSRHJ1DwEBLPSQS1W/rOsG0oQX10ObiqCMQ5J7u0Evu+k+0wXP4KqjzImFxwyfCmWlSUIDWrm5sMvfzIF4FhML1IA3itQgvtjXwg42dMq7+I0UcS0WBkWfEB/oVCs4sFaoj3SpfTlSMcDg=
-  api_key:
-    secure: jPUl4r5TqwdoItI3PRz7u1vQCNhmVarcC/Oyruwfx3JwFI3IZsn+z7WyvtKDrW6jq8ePiwEYGjcA1FV+sQLYZqu5O/8iYnd/HQwUIR2z0KWhwpurYS0LXPG7z2ZrL6amsw/+OSbQDqitg4QFZ/o/zOCHlJv/d+TLkDbXSTV7W1djxczn08cCiIwAZ8vHylUeP9TXy9hiJsz7mA67c6ALvlZR07mPy5+tr1i2/a89CXFMA9mj3AC2oRwFi5SkyeVYpOs1GaGsWuw7RdxW9HlOiZUv3OxuqL+0l3wtVwy8GuGq+/y48pfnYKFCU+BnZSC0hNIGTRad7Xbb9J2Wwkw/EOI5B2555uA91T+qjC5sTFUuyU2EL94qQ1sYhnbUjKB52BCsj3hDgY0uwDnsSkcBU3W1UN2pogsHqm0Ton4hb9cw+dM1K0tzgvO5kqiqhhrw2KYf2RWKJyerQWMKmuieaEDJERj49T5lETwWboVZgYmhu7YmggUn2Rtl3rp0LvsvVSybPIzcchyv9RtZN1OWud2/yfc6CDx2b94qKbbhVR9XguszpxeZgM5b2n8L6sS8NO5GXxReAaNJOj6Oq7hnUBB9/M4Q/Px+i1gUiZW9lvonqKu4FoONFaonG3b1F+PQ/922MDPuTywAaxjXM5CxGuaEqt07xIHf89Ra6P1sWV4=
-  on:
-    tags: true

@@ -942,7 +942,9 @@ describe('Session', () => {
       });
   });
 
-  it('should limit the number of sessions', (done) => {
+  it('should limit the number of sessions', function (done) {
+    this.timeout(0);
+
     const [alice_ident, bob_ident] = [0, 1].map(
       () => Proteus.keys.IdentityKeyPair.new()
     );

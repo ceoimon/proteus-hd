@@ -4,9 +4,8 @@
     "libsodium-wrappers-sumo": "0.5.4",
     "wire-webapp-cbor": "2.1.5"
   },
-  "description": "Axolotl protocol implementation for JavaScript.",
+  "description": "Signal Protocol (with header encryption) implementation for JavaScript. Based on Proteus.js.",
   "devDependencies": {
-    "bower": "1.8.2",
     "chai": "4.1.2",
     "eslint": "4.9.0",
     "jsdoc": "3.5.5",
@@ -14,25 +13,24 @@
     "tsd-jsdoc": "dcodeio/tsd-jsdoc#fe76c4dc071b00bb549d3af7a3bad8c555999e81",
     "webpack": "3.7.1"
   },
-  "homepage": "https://github.com/wireapp/proteus.js",
+  "homepage": "https://github.com/ceoimon/proteus-hd",
   "license": "GPL-3.0",
   "main": "src/proteus.js",
-  "name": "wire-webapp-proteus",
+  "name": "proteus-hd",
   "repository": {
     "type": "git",
-    "url": "git://github.com/wireapp/proteus.js.git"
+    "url": "git://github.com/ceoimon/proteus-hd.git"
   },
   "scripts": {
-    "dist": "bower install && webpack --progress",
+    "dist": "webpack --progress",
     "types": "jsdoc --verbose --pedantic --configure jsdoc.json src/ && node replace.js",
     "lint": "eslint src/",
     "preversion": "yarn lint && yarn test && yarn types",
     "version": "yarn dist && git add dist/**/*",
-    "postversion": "git push && git push --tags",
     "start": "node dist/index.js",
     "test": "yarn dist && yarn test:node",
     "test:node": "mocha -s 30000 -t 30000 --recursive test/harness.js test --trace-warnings"
   },
   "types": "dist/typings/proteus.d.ts",
-  "version": "5.2.0"
+  "version": "1.0.0"
 }
