@@ -350,13 +350,13 @@ export declare module session {
 
   interface SessionFromMessageTuple extends Array<session.Session | Uint8Array> { 0: session.Session; 1: Uint8Array; }
 
-  interface PendingPreKeyTuple extends Array<number | keys.PublicKey> { 0: number; 1: keys.PublicKey; }
+  interface PendingTuple extends Array<number | keys.PublicKey> { 0: number; 1: keys.PublicKey; }
 
   class Session {
     constructor();
 
-    static readonly MAX_RECV_CHAINS: number;
-    static readonly MAX_SESSION_STATES: number;
+    static readonly MAX_RECV_CHAINS: 5;
+    static readonly MAX_SESSION_STATES: 100;
 
     local_identity: any;
     pending_prekey: any;
@@ -394,7 +394,7 @@ export declare module session {
     decrypt(envelope: message.Envelope, msg: message.HeaderMessage): Uint8Array;
     static deserialise(buf: ArrayBuffer): session.SessionState;
     encode(e: CBOR.Encoder): CBOR.Encoder;
-    encrypt(identity_key: keys.IdentityKey, pending: PendingPreKeyTuple, plaintext: string|Uint8Array): message.Envelope;
+    encrypt(identity_key: keys.IdentityKey, pending: PendingTuple, plaintext: string|Uint8Array): message.Envelope;
     static init_as_alice(alice_identity_pair: keys.IdentityKeyPair, alice_base: keys.KeyPair, bob_pkbundle: keys.PreKeyBundle): session.SessionState;
     static init_as_bob(bob_ident: keys.IdentityKeyPair, bob_prekey: keys.KeyPair, alice_ident: keys.IdentityKey, alice_base: keys.PublicKey): session.SessionState;
     ratchet(ratchet_key: keys.KeyPair, prev_counter: number): void;
