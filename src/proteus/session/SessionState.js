@@ -211,10 +211,8 @@ class SessionState {
 
     if (pending) {
       message = PreKeyMessage.new(pending[0], pending[1], identity_key, message);
-    }
-
-    // create a confused pre-key message
-    if (confuse_pre_key_id !== undefined) {
+    } else if (confuse_pre_key_id !== undefined) {
+      // create a confused pre-key message
       message = PreKeyMessage.new(confuse_pre_key_id, KeyPair.new().public_key, identity_key, message);
     }
 
