@@ -1,6 +1,6 @@
 # Proteus-HD
 
-*NOTE: Using header encryption will make message decryption process much slower! You may want to use [Proteus.js](https://github.com/wireapp/proteus.js) in most case.*
+*NOTE: Using header encryption will make message decryption process much slower! You may want to use [Proteus.js](https://github.com/wireapp/proteus.js) in most cases.*
 
 While [Proteus.js](https://github.com/wireapp/proteus.js) is an implementation of the [Signal Protocol](https://signal.org/docs/) without header encryption, Proteus-HD take advantage of the [header encryption variant of Double Ratchet Algorithm](https://signal.org/docs/specifications/doubleratchet/#double-ratchet-with-header-encryption) to make communication more secure.
 
@@ -25,7 +25,7 @@ Use a module bundler or [UMD](https://github.com/umdjs/umd) builds in the [`dist
 
 ### Browser
 
-- [index.html](./examples/browser.html)
+- [browser.html](./examples/browser.html)
 
 ### Node.js
 

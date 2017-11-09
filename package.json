@@ -25,7 +25,8 @@
     "dist": "webpack --progress",
     "types": "jsdoc --verbose --pedantic --configure jsdoc.json src/ && node replace.js",
     "lint": "eslint src/",
-    "preversion": "yarn lint && yarn types && yarn dist",
+    "preversion": "yarn lint && yarn test",
+    "version": "yarn dist",
     "test": "mocha -s 30000 -t 30000 --recursive test/harness.js test --trace-warnings"
   },
   "types": "./proteus.d.ts",
