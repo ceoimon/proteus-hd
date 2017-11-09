@@ -31,7 +31,7 @@
     "test": "mocha -s 30000 -t 30000 --recursive test/harness.js test --trace-warnings"
   },
   "types": "./proteus.d.ts",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "files": [
     "src",
     "dist",
