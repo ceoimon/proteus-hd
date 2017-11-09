@@ -27,11 +27,11 @@
     "lint": "eslint src/",
     "preversion": "yarn lint && yarn test",
     "prepublishOnly": "yarn dist",
-    "postpublish": "git push && git push --tag",
+    "postversion": "git push && git push --tag",
     "test": "mocha -s 30000 -t 30000 --recursive test/harness.js test --trace-warnings"
   },
   "types": "./proteus.d.ts",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "files": [
     "src",
     "dist",
